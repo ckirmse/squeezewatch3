@@ -29,7 +29,7 @@ class RequestHTML(Resource) :
 		zones = app.nuvo_protocol.getZones()
 		strs = []
 		for (zoneid,zone) in zones.iteritems() :
-			strs.append("zone "+str(zone.getZoneID()) + str(" : source ") + str(zone.getSource()) + "<br/>\n")
+			strs.append("zone "+str(zone.getZoneID()) + "(" + zone.name + ")" + str(" : source ") + str(zone.getSource()) + "<br/>\n")
 		return "".join(strs)
 
 		#dlog("page is",self.page,"path is","/".join(processed_path))

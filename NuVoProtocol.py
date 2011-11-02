@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import datetime
 import time
 import re
 
@@ -33,8 +34,6 @@ class NuVoProtocol(basic.LineReceiver) :
 		self.favorites = {}
 
 		self.zones = {}
-		for i in range(1,17) :
-			self.zones[i] = NuVoZone(self,i)
 
 	def start(self) :
 		self.enabled = True
@@ -51,7 +50,7 @@ class NuVoProtocol(basic.LineReceiver) :
 		return self.zones
 
 	def lineReceived(self,line) :
-		dlog(line)
+		#dlog(line)
 		if line == '#PING' :
 			self.receivedPing()
 			return
@@ -112,6 +111,14 @@ class NuVoProtocol(basic.LineReceiver) :
 		m = re.match(r'#Z(\d+),ON,SRC(\d+),VOL\d+,DND\d+,LOCK\d+',line)
 		if m :
 			self.receivedZoneOnSource(m)
+			return
+		m = re.match(r'#ZCFG(\d+),ENABLE0',line)
+		if m :
+			# zone is disabled, ignore
+			return
+		m = re.match(r'#ZCFG(\d+),ENABLE1,NAME"(.*)"',line)
+		if m :
+			self.receivedZoneStatus(m)
 			return
 		dlog("unhandled:",line)
 
@@ -250,7 +257,11 @@ class NuVoProtocol(basic.LineReceiver) :
 		self.dispinfo = None
 		self.displines = None
 
-		
+		# set the nuvo's time
+		now = datetime.datetime.now()
+		self.send('*CFGTIME',now.year,',',now.month,',',now.day,',',now.hour,',',now.minute)
+
+		# tell it which sources we are controlling
 		sources = []
 		for i in range(1,7) :
 			if i in self.sources :
@@ -258,6 +269,8 @@ class NuVoProtocol(basic.LineReceiver) :
 			else :
 				sources.append(str(0))
 		self.send('*SNUMBERS' + ','.join(sources))
+
+		#set name and menu items
 		source_index = 1
 		for source in self.sources :
 			source_str = str(source)
@@ -270,6 +283,10 @@ class NuVoProtocol(basic.LineReceiver) :
 			app.getStatus(source)
 			source_index += 1
 
+		# find out what zones are enabled
+		for i in range(1,17) :
+			self.send("*ZCFG",str(i),"STATUS?")
+
 		d = defer.Deferred()
 		d.addCallback(self.answerFavorites)
 		app.getFavorites(d,0,20)
@@ -278,6 +295,11 @@ class NuVoProtocol(basic.LineReceiver) :
 	def receivedPing(self) :
 		#print "responding to ping"
 		self.send('*PING')
+
+	def receivedZoneStatus(self,m) :
+		(zone_num, name) = m.groups()
+		zone_num = int(zone_num)
+		self.zones[zone_num] = NuVoZone(self,zone_num,name)
 
 	def receivedButton(self,m) :
 		#print "got button"
@@ -356,7 +378,8 @@ class NuVoProtocol(basic.LineReceiver) :
 		for source in self.sources :
 			if not self.isAnyZoneOnThisSource(source) :
 				app.pause(source)
-				app.powerOff(source)
+				# should possibly turn off hardware sources, but not softsqueeze here...
+				#app.powerOff(source)
 
 	def receivedZoneOnSource(self,m) :
 		(zone_num, source) = m.groups()

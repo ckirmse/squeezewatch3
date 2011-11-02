@@ -30,7 +30,7 @@ def Run() :
 	# some apps can change them. We should set more here. If you have
 	# problems talking serial, try rebooting
 	#serport = SerialPort(app.nuvo_protocol,"/dev/ttyUSB0",reactor,baudrate=57600)
-	#serport = SerialPort(app.nuvo_protocol,"/dev/ttyS0",reactor,baudrate=57600)
+	serport = SerialPort(app.nuvo_protocol,"/dev/ttyS0",reactor,baudrate=57600)
 
 	# listen to incoming maintenance text connections
 	app.factory = SqueezeCLIFactory()

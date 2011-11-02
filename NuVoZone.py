@@ -28,9 +28,10 @@ class NuVoZone :
 	press_skip_initial_delay = 0.5
 	press_skip_subsequent_delay = 3.0
 
-	def __init__(self,nuvo,zone) :
+	def __init__(self,nuvo,zone,name) :
 		self.nuvo = nuvo
 		self.zone = zone
+		self.name = name
 
 		self.source = 0
 
