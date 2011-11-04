@@ -49,6 +49,9 @@ class NuVoProtocol(basic.LineReceiver) :
 	def getZones(self) :
 		return self.zones
 
+	def isValidZone(self,zone_num) :
+		return zone_num in self.zones
+
 	def lineReceived(self,line) :
 		#dlog(line)
 		if line == '#PING' :
@@ -238,7 +241,15 @@ class NuVoProtocol(basic.LineReceiver) :
 			index += 1
 			self.favorites[index] = id
 			self.send('*S',str(self.sources[0]),'FAVORITESITEM',index,',0,0,"',nuvoEscape(name),'"')
-		
+
+	def sendZoneOn(self,zone_num) :
+		self.send('*Z',zone_num,'ON')
+
+	def sendZoneOff(self,zone_num) :
+		self.send('*Z',zone_num,'OFF')
+
+	def sendAllOff(self) :
+		self.send('*ALLOFF')
 
 	def sendMenu(self,source,zone_num,menuid,menusize,selectiditemindex,firstblockitemindex,blocksize,description) :
 		self.send('*S',source,'Z',zone_num,'MENU',menuid,',0,0,',menusize,',',selectiditemindex,',',firstblockitemindex,',',blocksize,',"',nuvoEscape(description),'"')
@@ -258,7 +269,7 @@ class NuVoProtocol(basic.LineReceiver) :
 		self.displines = None
 
 		# set the nuvo's time
-		now = datetime.datetime.now()
+		now = datetime.now()
 		self.send('*CFGTIME',now.year,',',now.month,',',now.day,',',now.hour,',',now.minute)
 
 		# tell it which sources we are controlling

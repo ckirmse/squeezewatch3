@@ -80,6 +80,9 @@ class NuVoZone :
 	def getZoneID(self) :
 		return self.zone
 
+	def isOn(self) :
+		return self.source != 0
+
 	def getSource(self) :
 		return self.source
 

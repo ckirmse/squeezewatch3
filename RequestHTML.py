@@ -22,6 +22,19 @@ class RequestHTML(Resource) :
 		request.setHeader("Content-Type","text/html")
 
 		parameters = request.args
+		dlog(parameters)
+		if parameters.has_key("action") :
+			if parameters["action"][0] == "zone_on" :
+				zone_num = int(parameters["zone"][0])
+				if app.nuvo_protocol.isValidZone(zone_num) :
+					app.nuvo_protocol.sendZoneOn(zone_num)
+			elif parameters["action"][0] == "zone_off" :
+				zone_num = int(parameters["zone"][0])
+				if app.nuvo_protocol.isValidZone(zone_num) :
+					app.nuvo_protocol.sendZoneOff(zone_num)
+			elif parameters["action"][0] == "all_off" :
+				app.nuvo_protocol.sendAllOff()
+
 
 		raw_path = re.split("/",request.path)
 		processed_path = [s for s in raw_path if s != '']
@@ -29,7 +42,15 @@ class RequestHTML(Resource) :
 		zones = app.nuvo_protocol.getZones()
 		strs = []
 		for (zoneid,zone) in zones.iteritems() :
-			strs.append("zone "+str(zone.getZoneID()) + "(" + zone.name + ")" + str(" : source ") + str(zone.getSource()) + "<br/>\n")
+			strs.append("zone "+str(zone.getZoneID()) + "(" + zone.name + ")" + " : ")
+			if zone.isOn() :
+				strs.append("source " + str(zone.getSource()))
+				strs.append(" <a href=\"?action=zone_off&zone=" + str(zone.getZoneID()) + "\">Turn Off</a>")
+			else :
+				strs.append("<a href=\"?action=zone_on&zone=" + str(zone.getZoneID()) + "\">Turn On</a>")
+
+			strs.append("<br/>\n")
+		strs.append("<a href=\"?action=all_off\">All Off</a>")
 		return "".join(strs)
 
 		#dlog("page is",self.page,"path is","/".join(processed_path))

@@ -1,3 +1,8 @@
-set time on startup *CFGTIME
-get zone names on startup
+todo
 maybe get source names on startup?
+use templates for html
+add ajax stuff for display
+
+done
+get zone names on startup
+set time on startup *CFGTIME
