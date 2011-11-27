@@ -73,7 +73,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			elog("Received confused response from NuVoNet")
 			return
 
-		#dlog(line)
+		dlog(line)
 
 		m = re.match(r'#S(\d+).*',line)
 		if m :
@@ -211,13 +211,22 @@ class NuVoProtocol(basic.LineReceiver) :
 			else :
 				dispinfo = makeString('*S',source,'DISPINFO',duration,',',position,',',mode)
 
+		any_changed = False
+
 		if displines != self.source_data[source]['displines'] :
+			any_changed = True
 			self.send(displines)
 			self.source_data[source]['displines'] = displines
 	
 		if dispinfo != self.source_data[source]['dispinfo'] :
+			any_changed = True
 			self.send(dispinfo)
 			self.source_data[source]['dispinfo'] = dispinfo
+
+		if any_changed :
+			for (zone_num,zone) in self.zones.iteritems() :
+				if zone.getSource() == source :
+					zone.notifyStatusChanged()
 
 	def answerRepeatStatus(self,source,repeat_status) :
 		self.source_data[source]['playlist_repeat'] = repeat_status

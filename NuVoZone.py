@@ -28,12 +28,18 @@ class NuVoZone :
 	press_skip_initial_delay = 0.5
 	press_skip_subsequent_delay = 3.0
 
+	# how long to let a zone under a source we control be idle
+	idle_time = 300.0
+	# how long to let a zone be on for a source we don't control
+	uncontrolled_source_time = 10800.0
+
 	def __init__(self,nuvo,zone,name) :
 		self.nuvo = nuvo
 		self.zone = zone
 		self.name = name
 
 		self.source = 0
+		self.idle_timer = None
 
 		self.menuid_artists = 27
 		self.menuid_artist_albums = 28
@@ -91,7 +97,15 @@ class NuVoZone :
 			elog("attempt to set state to itself",self.state)
 			return
 
-		dlog("state change",self.states[self.state],"=>",self.states[new_state])
+		if self.idle_timer != None :
+			if self.source in app.nuvo_protocol.getSources() :
+				#dlog("zone",self.zone,"resetting short timer")
+				self.idle_timer.reset(self.idle_time)
+			else :
+				#dlog("zone",self.zone,"resetting long timer")
+				self.idle_timer.reset(self.uncontrolled_source_time)
+				
+
 		prev_state = self.state
 
 		if prev_state == self.StateMain :
@@ -402,9 +416,6 @@ class NuVoZone :
 			elif button == 2 :
 				pass
 			return
-					
-
-					
 
 	def receivedMenuRequest(self,source,menuid,up,location,itemindex) :
 		source = int(source)
@@ -542,9 +553,39 @@ class NuVoZone :
 
 	def receivedOff(self) :
 		self.source = 0
+		if self.idle_timer != None :
+			self.idle_timer.cancel()
 	
 	def receivedOnSource(self,source) :
 		self.source = source
+		if source in app.nuvo_protocol.getSources() :
+			# it's a source we control--we should auto-time out as normal
+			#dlog("going to a local source for zone",self.zone)
+			if self.idle_timer :
+				#dlog("resetting short timer")
+				self.idle_timer.reset(self.idle_time)
+			else :
+				#dlog("initiating short timer")
+				self.idle_timer = reactor.callLater(self.idle_time,self.notifyIdleTimer)
+		else :
+			# it's some other source; long auto timer
+			#dlog("going to an uncontrolled source for zone",self.zone)
+			if self.idle_timer :
+				#dlog("resetting long timer")
+				self.idle_timer.reset(self.uncontrolled_source_time)
+			else :
+				#dlog("initiating long timer")
+				self.idle_timer = reactor.callLater(self.uncontrolled_source_time,self.notifyIdleTimer)
+
+	def notifyStatusChanged(self) :
+		if self.idle_timer != None :
+			#dlog("zone",self.zone,"status changed")
+			self.idle_timer.reset(self.idle_time)
+		
+	def notifyIdleTimer(self) :
+		dlog("idle timeout for zone",self.zone)
+		self.idle_timer = None
+		app.nuvo_protocol.sendZoneOff(self.zone)
 
 	def holdingPrev(self) :
 		app.rewind(self.source)

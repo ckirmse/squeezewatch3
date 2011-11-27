@@ -6,7 +6,7 @@ from twisted.web.resource import Resource
 
 from Log import *
 
-#from renderTemplate import renderTemplate
+from renderTemplate import renderTemplate
 
 from SqueezeWatchApp import app
 
@@ -55,14 +55,14 @@ class RequestHTML(Resource) :
 
 		#dlog("page is",self.page,"path is","/".join(processed_path))
 
-		# if len(processed_path) == 0 :
+		#if len(processed_path) == 0 :
 		# 	page = "home"
 		# 	path_parameters = []
-		# else :
-		# 	# need to cleanse page of non a-z
-		# 	page = processed_path[0]
+		#else :
+			# need to cleanse page of non a-z
+		#	page = processed_path[0]
 		# 	path_parameters = processed_path[1:]
 
-		# dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
+		#dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
 
-		# return renderTemplate(ZigRequest(request),page,parameters,path_parameters,'renderHTMLPage')
+		#return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')
