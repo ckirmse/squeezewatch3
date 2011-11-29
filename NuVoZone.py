@@ -548,7 +548,7 @@ class NuVoZone :
 		self.source = 0
 		if self.idle_timer != None :
 			self.idle_timer.cancel()
-			self.idle_timer = nil
+			self.idle_timer = None
 	
 	def receivedOnSource(self,source) :
 		self.source = source
