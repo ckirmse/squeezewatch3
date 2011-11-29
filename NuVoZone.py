@@ -97,14 +97,7 @@ class NuVoZone :
 			elog("attempt to set state to itself",self.state)
 			return
 
-		if self.idle_timer != None :
-			if self.source in app.nuvo_protocol.getSources() :
-				#dlog("zone",self.zone,"resetting short timer")
-				self.idle_timer.reset(self.idle_time)
-			else :
-				#dlog("zone",self.zone,"resetting long timer")
-				self.idle_timer.reset(self.uncontrolled_source_time)
-				
+		self.resetIdleTimer()
 
 		prev_state = self.state
 
@@ -555,10 +548,14 @@ class NuVoZone :
 		self.source = 0
 		if self.idle_timer != None :
 			self.idle_timer.cancel()
+			self.idle_timer = nil
 	
 	def receivedOnSource(self,source) :
 		self.source = source
-		if source in app.nuvo_protocol.getSources() :
+		self.resetIdleTimer()
+
+	def resetIdleTimer(self) :
+		if self.source in app.nuvo_protocol.getSources() :
 			# it's a source we control--we should auto-time out as normal
 			#dlog("going to a local source for zone",self.zone)
 			if self.idle_timer :
