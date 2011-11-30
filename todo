@@ -1,12 +1,12 @@
 todo
 maybe get source names on startup?
-use templates for html
 add ajax stuff for display
 add volume controls in web
 add track controls in web
 add music selection in web
 
 done
+use templates for html
 zone idle turning off
 get zone names on startup
 set time on startup *CFGTIME

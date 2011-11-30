@@ -51,18 +51,22 @@ class RequestHTML(Resource) :
 
 			strs.append("<br/>\n")
 		strs.append("<a href=\"?action=all_off\">All Off</a>")
-		return "".join(strs)
 
-		#dlog("page is",self.page,"path is","/".join(processed_path))
+		#return "".join(strs)
 
-		#if len(processed_path) == 0 :
-		# 	page = "home"
-		# 	path_parameters = []
-		#else :
+		dlog("page is",self.page,"path is","/".join(processed_path))
+
+		if len(processed_path) == 0 :
+		 	page = "home"
+		 	path_parameters = []
+		else :
 			# need to cleanse page of non a-z
-		#	page = processed_path[0]
-		# 	path_parameters = processed_path[1:]
+			page = processed_path[0]
+		 	path_parameters = processed_path[1:]
 
-		#dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
+		if page == "favicon.ico" :
+			return ""
 
-		#return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')
+		dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
+
+		return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')

@@ -1,0 +1,7 @@
+#extends homeLogic
+#implements renderHTMLPage
+Audio Zones
+<hr/>
+#for $i in $zones
+zone $i ($zoneName($i)) is on? $zoneIsOn($i)<br/>
+#end for

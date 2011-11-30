@@ -46,6 +46,9 @@ class NuVoProtocol(basic.LineReceiver) :
 	def getSources(self) :
 		return self.sources
 
+	def getZone(self,zone) :
+		return self.zones[zone]
+
 	def getZones(self) :
 		return self.zones
 

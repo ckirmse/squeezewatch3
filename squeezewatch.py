@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+import os
+import sys
+
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 
@@ -24,6 +27,12 @@ def Init(*args) :
 
 def Run() :
 	log("starting app")
+
+	cmd_folder = os.path.dirname(os.path.abspath("templates/home.py"))
+	#dlog("cmd_folder is",cmd_folder)
+	if cmd_folder not in sys.path :
+		#dlog("added",cmd_folder,"to system path")
+		sys.path.insert(0,cmd_folder)
 
 	app.nuvo_protocol = NuVoProtocol((3,5))
 	# there are more serial settings that are correct on boot, but
