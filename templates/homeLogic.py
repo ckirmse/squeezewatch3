@@ -21,3 +21,15 @@ class homeLogic(RequestLogic) :
 	def zoneName(self,zone_num) :
 		zone = app.nuvo_protocol.getZone(zone_num)
 		return zone.name
+
+	def source(self,zone_num) :
+		zone = app.nuvo_protocol.getZone(zone_num)
+		return zone.getSource()
+
+	def state(self,zone_num) :
+		zone = app.nuvo_protocol.getZone(zone_num)
+		return zone.getState()
+
+	def stateName(self,zone_num) :
+		zone = app.nuvo_protocol.getZone(zone_num)
+		return zone.getStateName()

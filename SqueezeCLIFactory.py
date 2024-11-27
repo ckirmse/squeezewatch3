@@ -167,7 +167,7 @@ class SqueezeCLIFactory(ReconnectingClientFactory) :
 	def notifyConnectionMade(self,connector) :
 		log("Connected to",connector)
 		self.connector = connector
-		app.restart()
+		app.resetAll()
 
 	### callbacks from ClientFactory
 

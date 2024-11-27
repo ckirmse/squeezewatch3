@@ -22,10 +22,11 @@ def makeString(*args) :
 
 def nuvoEscape(s) :
 	retval = []
-	for ch in s :
+	for ch in s.encode("ISO-8859-1") :
 		if ord(ch) >= 128 :
 			retval.append('_')
 		elif ch == '*' :
+		#if ch == '*' :
 			retval.append(r'\*')
 		elif ch == '"' :
 			retval.append(r'\"')

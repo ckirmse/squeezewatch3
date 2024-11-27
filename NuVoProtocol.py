@@ -6,6 +6,7 @@ import re
 
 from twisted.protocols import basic
 from twisted.internet import defer
+from twisted.internet import reactor
 
 from zigutils import *
 from Log import *
@@ -35,6 +36,8 @@ class NuVoProtocol(basic.LineReceiver) :
 
 		self.zones = {}
 
+		reactor.callLater(3,self.notifyTimer)
+
 	def start(self) :
 		self.enabled = True
 
@@ -55,6 +58,33 @@ class NuVoProtocol(basic.LineReceiver) :
 	def isValidZone(self,zone_num) :
 		return zone_num in self.zones
 
+	def notifyTimer(self) :
+		"""
+		Called about once a day to set the clock on the NuVo. Since we can only set H:M,
+		we try to get called with the clock at zero seconds to make the time as accurate
+		as possible on the NuVo.
+		"""
+		self.should_sync_time = True
+
+		# first, work to get ourselves called right on a minute boundary
+		now = datetime.now()
+		if now.second == 0 :
+			dlog('setting time to',now.year,',',now.month,',',now.day,',',now.hour,',',now.minute)
+			if self.enabled and not self.pending_restart :
+				self.send('*CFGTIME',now.year,',',now.month,',',now.day,',',now.hour,',',now.minute)
+				self.should_sync_time = False
+				# time is accurate, so let's get called back at around 3am to do it all again
+				sleep_time = ((3-now.hour)*60+(59-now.minute))*60
+				if sleep_time <= 0 :
+					sleep_time += 24*60*60
+				dlog("callback in",sleep_time,"seconds")
+				reactor.callLater(sleep_time,self.notifyTimer)
+				return
+		else :
+			dlog("got a timer on a non-minute boundary",now.second)
+
+		reactor.callLater(60-(now.second + now.microsecond/1000000),self.notifyTimer)
+		
 	def lineReceived(self,line) :
 		#dlog(line)
 		if line == '#PING' :
@@ -76,7 +106,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			elog("Received confused response from NuVoNet")
 			return
 
-		dlog(line)
+		#dlog(line)
 
 		m = re.match(r'#S(\d+).*',line)
 		if m :
@@ -124,7 +154,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			return
 		m = re.match(r'#ZCFG(\d+),ENABLE1,NAME"(.*)"',line)
 		if m :
-			self.receivedZoneStatus(m)
+			self.receivedZoneConfigStatus(m)
 			return
 		dlog("unhandled:",line)
 
@@ -153,8 +183,8 @@ class NuVoProtocol(basic.LineReceiver) :
 
 	def answerStatus(self,source,data) :
 		# perhaps should look at data['showBriefly']
-		self.playlist_repeat = int(data['playlist repeat'])
-		self.playlist_shuffle = int(data['playlist shuffle'])
+		self.source_data[source]['playlist_repeat'] = int(data['playlist repeat'])
+		self.source_data[source]['playlist_shuffle'] = int(data['playlist shuffle'])
 
 		duration = 0
 		if data.has_key('duration') :
@@ -167,11 +197,11 @@ class NuVoProtocol(basic.LineReceiver) :
 		mode = 0
 		if data['mode'] == 'play' :
 			mode = 2
-			if self.playlist_repeat > 0 and self.playlist_shuffle > 0 :
+			if self.source_data[source]['playlist_repeat'] > 0 and self.source_data[source]['playlist_shuffle'] > 0 :
 				mode = 8
-			elif self.playlist_repeat > 0 and self.playlist_shuffle == 0 :
+			elif self.source_data[source]['playlist_repeat'] > 0 and self.source_data[source]['playlist_shuffle'] == 0 :
 				mode = 7
-			elif self.playlist_repeat == 0 and self.playlist_shuffle > 0 :
+			elif self.source_data[source]['playlist_repeat'] == 0 and self.source_data[source]['playlist_shuffle'] > 0 :
 				mode = 6
 			
 		elif data['mode'] == 'stop' :
@@ -203,6 +233,8 @@ class NuVoProtocol(basic.LineReceiver) :
 		if data.has_key('title') :
 			title = data['title']
 
+		any_changed = False
+
 		if data['mode'] == 'stop' :
 			displines = makeString('*S',source,'DISPLINES2,2,1,"','','","','','","','','","','','"')
 			dispinfo = makeString('*S',source,'DISPINFO',0,',',0,',',mode)
@@ -211,10 +243,9 @@ class NuVoProtocol(basic.LineReceiver) :
 			if duration == 0 :
 				# streaming causes this
 				dispinfo = makeString('*S',source,'DISPINFO',0,',',0,',',mode)
+				any_changed = True
 			else :
 				dispinfo = makeString('*S',source,'DISPINFO',duration,',',position,',',mode)
-
-		any_changed = False
 
 		if displines != self.source_data[source]['displines'] :
 			any_changed = True
@@ -253,6 +284,9 @@ class NuVoProtocol(basic.LineReceiver) :
 			index += 1
 			self.favorites[index] = id
 			self.send('*S',str(self.sources[0]),'FAVORITESITEM',index,',0,0,"',nuvoEscape(name),'"')
+
+	def sendGetZoneStatus(self,zone_num) :
+		self.send('*Z',zone_num,'STATUS?')
 
 	def sendZoneOn(self,zone_num) :
 		self.send('*Z',zone_num,'ON')
@@ -293,18 +327,19 @@ class NuVoProtocol(basic.LineReceiver) :
 				sources.append(str(0))
 		self.send('*SNUMBERS' + ','.join(sources))
 
-		#set name and menu items
+		#set name
 		source_index = 1
 		for source in self.sources :
 			source_str = str(source)
 			self.send('*S' + source_str + 'NAME"SqueezeBox' + str(source_index) + '"')
-			self.send('*S' + source_str + 'MENU,3')
-			self.send('*S' + source_str + 'MENUITEM1,1,0,"Artists"')
-			self.send('*S' + source_str + 'MENUITEM2,1,0,"Playlists"')
-			self.send('*S' + source_str + 'MENUITEM3,1,0,"New Music"')
-			self.send('*S' + source_str + 'MENUITEM4,1,0,"Settings"')
-			app.getStatus(source)
 			source_index += 1
+
+		# setup menu
+		self.sendTopLevelMenuItems()
+
+		# get status of this source for display
+		for source in self.sources :
+			app.getStatus(source)
 
 		# find out what zones are enabled
 		for i in range(1,17) :
@@ -314,12 +349,28 @@ class NuVoProtocol(basic.LineReceiver) :
 		d.addCallback(self.answerFavorites)
 		app.getFavorites(d,0,20)
 
+	def sendTopLevelMenuItems(self) :
+		try :
+			file = open("/tmp/weatherinfo.txt")
+			line = file.readline().rstrip()
+		except IOError as e:
+			line = "Unknown info"
+
+		for source in self.sources :
+			source_str = str(source)
+			self.send('*S' + source_str + 'MENU,5')
+			self.send('*S' + source_str + 'MENUITEM1,1,0,"Artists"')
+			self.send('*S' + source_str + 'MENUITEM2,1,0,"Playlists"')
+			self.send('*S' + source_str + 'MENUITEM3,1,0,"New Music"')
+			self.send('*S' + source_str + 'MENUITEM4,1,0,"Settings"')
+			self.send('*S' + source_str + 'MENUITEM5,4,0,"' + line + '"')
 
 	def receivedPing(self) :
 		#print "responding to ping"
 		self.send('*PING')
+		self.sendTopLevelMenuItems()
 
-	def receivedZoneStatus(self,m) :
+	def receivedZoneConfigStatus(self,m) :
 		(zone_num, name) = m.groups()
 		zone_num = int(zone_num)
 		self.zones[zone_num] = NuVoZone(self,zone_num,name)
@@ -396,9 +447,10 @@ class NuVoProtocol(basic.LineReceiver) :
 		zone_num = int(zone_num)
 		#dlog("received zone",zone_num,"off")
 		zone = self.zones[zone_num]
+		source = zone.getSource()
 		zone.receivedOff()
-		# auto-pause if no one listening
-		for source in self.sources :
+		# auto-pause if we just lost the last zone listening to a source
+		if source in self.sources :
 			if not self.isAnyZoneOnThisSource(source) :
 				app.pause(source)
 				# should possibly turn off hardware sources, but not softsqueeze here...

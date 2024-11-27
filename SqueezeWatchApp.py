@@ -11,9 +11,14 @@ class SqueezeWatchApp :
 	def __init__(self) :
 		pass
 
-	def restart(self) :
+	def resetAll(self) :
 		self.players = []
 		self.source_player_map = {}
+
+		self.resetCaches()
+
+	def resetCaches(self) :
+		"initializes prefills some caches"
 
 		self.artists = {}
 		self.count_artists = None
@@ -31,7 +36,6 @@ class SqueezeWatchApp :
 		
 		self.newest_albums = {}
 
-		# prefill some caches
 		d = defer.Deferred()
 		d.addCallback(self.addCacheArtists)
 		self.getArtists(d,0,99999)
@@ -262,6 +266,9 @@ class SqueezeWatchApp :
 		d = defer.Deferred()
 		d.addCallback(self.addCacheFavorites)
 		self.getFavorites(d,0,20)
+
+	def receivedRescanDone(self) :
+		self.resetCaches()
 
 	def getSourceForPlayer(self,player) :
 		source = None

@@ -11,7 +11,7 @@ def renderTemplate(request,page,parameters,path_parameters,render_function) :
 	# check if file exists--if it does, puke on import error
 	show_import_errors = True # app.config.get("system","show_import_errors")
 	if show_import_errors :
-		dlog("trying to import",page)
+		#dlog("trying to import",page)
 		mod = __import__(page)
 		template_class = getattr(mod,page)
 	else :

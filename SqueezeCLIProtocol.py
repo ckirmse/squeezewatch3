@@ -76,6 +76,10 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		if m :
 			self.receivedFavoritesChanged(m)
 			return
+		m = re.match(r'rescan\s+(.*)',line)
+		if m :
+			self.receivedRescan(m)
+			return
 		dlog("unknown line:",line)
 
 
@@ -83,7 +87,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		dlog("connection made")
 		self.factory.notifyConnectionMade(self)
 
-		self.send("subscribe playlist,favorites,client")
+		self.send("subscribe playlist,favorites,client,rescan")
 
 		# get info on the players out there - should parse "client" messages to know when changed
 		self.send("players 0 5")
@@ -485,6 +489,12 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 
 	def receivedFavoritesChanged(self,m) :
 		app.receivedFavoritesChanged()
+
+	def receivedRescan(self,m) :
+		(rescan_state,) = m.groups()
+		if rescan_state == "done" :
+			app.receivedRescanDone()
+
 
 	def send(self,*args) :
 		s = ''.join([str(arg) for arg in args])

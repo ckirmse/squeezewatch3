@@ -22,7 +22,7 @@ class RequestHTML(Resource) :
 		request.setHeader("Content-Type","text/html")
 
 		parameters = request.args
-		dlog(parameters)
+		#dlog(parameters)
 		if parameters.has_key("action") :
 			if parameters["action"][0] == "zone_on" :
 				zone_num = int(parameters["zone"][0])
@@ -54,7 +54,7 @@ class RequestHTML(Resource) :
 
 		#return "".join(strs)
 
-		dlog("page is",self.page,"path is","/".join(processed_path))
+		#dlog("page is",self.page,"path is","/".join(processed_path))
 
 		if len(processed_path) == 0 :
 		 	page = "home"
@@ -67,6 +67,6 @@ class RequestHTML(Resource) :
 		if page == "favicon.ico" :
 			return ""
 
-		dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
+		#dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
 
 		return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')

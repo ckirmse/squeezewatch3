@@ -83,6 +83,9 @@ class NuVoZone :
 		self.newest_albums_menu_map = {}
 		# StateSettings
 
+		# now find out our state
+		self.nuvo.sendGetZoneStatus(self.zone)
+
 	def getZoneID(self) :
 		return self.zone
 
@@ -91,6 +94,13 @@ class NuVoZone :
 
 	def getSource(self) :
 		return self.source
+
+	def getState(self) :
+		return self.state
+
+	def getStateName(self) :
+		return NuVoZone.states[self.state]
+
 
 	def setState(self,new_state) :
 		if self.state == new_state :
@@ -114,8 +124,7 @@ class NuVoZone :
 		self.state = new_state
 
 		if self.state == self.StateMain :
-			self.dispinfo = None
-			self.displines = None
+			pass
 		elif self.state == self.StateArtists :
 			d = defer.Deferred()
 			d.addCallback(self.answerArtists,first_in_state=True)
@@ -168,7 +177,7 @@ class NuVoZone :
 			current_index = self.menu_item_index-1
 		self.menu_item_index = None # don't set our position next time
 		self.nuvo.sendMenu(self.source,self.zone,self.menuid_artist_albums,count,current_index,offset,len(album_data),self.menu_artist_name)
-		index = 0
+		index = offset
 		for (albumid,album) in album_data :
 			index += 1
 			self.artist_albums_menu_map[index] = (albumid,album)
@@ -326,6 +335,7 @@ class NuVoZone :
 				self.setState(self.StateArtistAlbums)
 			elif button == 2 :
 				# play
+				self.artist_menu_last_chosen_index = itemindex
 				(artistid,album) = self.artist_menu_map[itemid]
 				app.playArtist(self.source,artistid)
 				self.nuvo.sendExitMenu(self.source,self.zone)
@@ -335,11 +345,13 @@ class NuVoZone :
 		if menuid == self.menuid_artist_albums :
 			if button == 1 :
 				# OK
-				#dlog("show tracks for this album")
+				#dlog("show tracks for this album",itemid)
+				#dlog("which is album name",self.artist_albums_menu_map[itemid])
 				self.menu_artist_album_itemid = itemid
 				(self.menu_artist_albumid,self.menu_artist_album_name) = self.artist_albums_menu_map[itemid]
 				self.setState(self.StateArtistAlbumTracks)
 			elif button == 2 :
+				self.menu_artist_album_itemid = itemid
 				# play
 				(albumid,album) = self.artist_albums_menu_map[itemid]
 				app.playAlbum(self.source,albumid)
@@ -445,7 +457,7 @@ class NuVoZone :
 				self.setState(self.StateMain)
 				self.nuvo.sendMainMenu(self.source,self.zone)
 			else :
-				elog("receivedmenuRequest unknown state ",self.state)
+				elog("receivedMenuRequest unknown state ",self.state)
 			return
 		
 		if menuid == self.menuid_artists :
