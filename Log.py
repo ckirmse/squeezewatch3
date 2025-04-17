@@ -30,7 +30,7 @@ class Log :
 		s = cls.buildString(*args)
 		cls.log_file.write(s + "\n")
 		if cls.log_stdout :
-			print s
+			print(s)
 		else :
 			cls.log_file.flush()
 
@@ -39,7 +39,7 @@ class Log :
 		s = cls.buildString(*args)
 		cls.elog_file.write(s + "\n")
 		if cls.log_stdout :
-			print s
+			print(s)
 		else :
 			cls.elog_file.flush()
 
@@ -48,7 +48,7 @@ class Log :
 		s = cls.buildString(*args)
 		cls.dlog_file.write(s + "\n")
 		if cls.log_stdout :
-			print s
+			print(s)
 		else :
 			cls.dlog_file.flush()
 

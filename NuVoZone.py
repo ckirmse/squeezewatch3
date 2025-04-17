@@ -51,7 +51,7 @@ class NuVoZone :
 
 		# make class state constants first time
 		if not hasattr(NuVoZone,'StateMain') :
-			for num, state_name in self.states.iteritems() :
+			for num, state_name in self.states.items() :
 				setattr(NuVoZone,state_name,num)
 		self.state = self.StateMain
 		self.menu_item_index = None
@@ -153,7 +153,8 @@ class NuVoZone :
 		elif self.state == self.StateSettings :
 			self.sendSettingsMenu()
 
-	def answerArtists(self,(offset,limit,count,artist_data),first_in_state=False) :
+	def answerArtists(self,tuple_var,first_in_state=False) :
+		offset,limit,count,artist_data = tuple_var
 		#dlog("have",len(artist_data),"artists")
 		current_index = '0xFFFF'
 		if self.menu_item_index :
@@ -170,7 +171,8 @@ class NuVoZone :
 			self.artist_menu_map[index] = (artistid,artist)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,3,artist)
 
-	def answerArtistAlbums(self,(offset,limit,count,album_data)) :
+	def answerArtistAlbums(self,tuple_var) :
+		offset,limit,count,album_data = tuple_var
 		#dlog("have",len(album_data),"albums")
 		current_index = '0xFFFF'
 		if self.menu_item_index :
@@ -183,7 +185,8 @@ class NuVoZone :
 			self.artist_albums_menu_map[index] = (albumid,album)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,3,album)
 		
-	def answerAlbumTracks(self,(offset,limit,count,track_data)) :
+	def answerAlbumTracks(self,tuple_var) :
+		offset,limit,count,track_data = tuple_var
 		#dlog("have",len(track_data),"tracks")
 		self.nuvo.sendMenu(self.source,self.zone,self.menuid_artist_album_tracks,count,'0xFFFF',offset,len(track_data),self.menu_artist_album_name)
 		index = offset
@@ -192,7 +195,8 @@ class NuVoZone :
 			self.artist_album_tracks_menu_map[index] = (trackid,track)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,2,str(index) + ". " + track)
 		
-	def answerPlaylists(self,(offset,limit,count,playlist_data)) :
+	def answerPlaylists(self,tuple_var) :
+		offset,limit,count,playlist_data = tuple_var
 		#dlog("have",len(playlist_data),"playlists")
 		current_index = '0xFFFF'
 		if self.menu_item_index :
@@ -210,7 +214,8 @@ class NuVoZone :
 		if self.state == self.StateSettings :
 			self.sendSettingsMenu()
 
-	def answerPlaylistTracks(self,(offset,limit,count,track_data)) :
+	def answerPlaylistTracks(self,tuple_var) :
+		offset,limit,count,track_data = tuple_var
 		#dlog("have",len(track_data),"tracks")
 		self.nuvo.sendMenu(self.source,self.zone,self.menuid_playlist_tracks,count,'0xFFFF',offset,len(track_data),self.menu_playlist_name)
 		index = offset
@@ -219,7 +224,8 @@ class NuVoZone :
 			self.playlist_tracks_menu_map[index] = (trackid,track)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,2,str(index) + ". " + track)
 
-	def answerNewestAlbums(self,(album_data,)) :
+	def answerNewestAlbums(self,tuple_var) :
+		album_data, = tuple_var
 		#dlog("have",len(album_data),"newest albums")
 		current_index = '0xFFFF'
 		if self.menu_item_index :
@@ -327,7 +333,7 @@ class NuVoZone :
 			if button == 1 :
 				# OK
 				#dlog("show menu for artist itemid",itemid)
-				#for index,(artistid,artist) in self.artist_menu_map.iteritems() :
+				#for index,(artistid,artist) in self.artist_menu_map.items() :
 				#	print "menuid",index,"artistid",artistid,artist
 				self.artist_menu_last_chosen_index = itemindex
 				self.menu_artist_itemid = itemid

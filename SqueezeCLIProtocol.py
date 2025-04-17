@@ -2,7 +2,7 @@
 
 import re
 
-from urllib import unquote
+from urllib.parse import unquote
 
 from twisted.protocols import basic
 
@@ -19,6 +19,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 
 	def lineReceived(self,line) :
 		#dlog("cli result",line)
+		line = str(line, "utf-8")
 
 		m = re.match(r'players\s+(\d+)\s+(\d+)\s+(.*)',line)
 		if m :
@@ -177,14 +178,13 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			elif key == "id" :
 				ids.append(int(value))
 			elif key == "artist" :
-				value = value.decode('utf-8')
 				artists.append(value)
 			elif key == "context" :
 				context = value
 			else :
 				elog("unexpected key",key)
 
-		artist_data = zip(ids,artists)
+		artist_data = list(zip(ids,artists))
 		#dlog("got artists for",offset,limit)
 		self.dispatchResult(context,offset,limit,count,artist_data)
 
@@ -231,12 +231,12 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		# sort is None when getting an artist's albums;
 		# sort is "new" when getting newest albums
 		if sort == "new" :
-			album_data = zip(ids,albums,artists)
+			album_data = list(zip(ids,albums,artists))
 			#for (albumid,album,artistid) in album_data :
 			#	print albumid,album,artistid
 			self.dispatchResult(context,album_data)
 		else :
-			album_data = zip(ids,albums)
+			album_data = list(zip(ids,albums))
 			app.addCacheArtistAlbums(artistid,offset,limit,count,album_data)
 			self.dispatchResult(context,offset,limit,count,album_data)
 
@@ -273,7 +273,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			else :
 				elog("unexpected key",key)
 
-		track_data = zip(ids,tracks)
+		track_data = list(zip(ids,tracks))
 		#dlog("got tracks for",offset,limit)
 		app.addCacheAlbumTracks(albumid,offset,limit,count,track_data)
 		self.dispatchResult(context,offset,limit,count,track_data)
@@ -300,14 +300,13 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			elif key == "id" :
 				ids.append(int(value))
 			elif key == "playlist" :
-				value = value.decode('utf-8')
 				playlists.append(value)
 			elif key == "context" :
 				context = value
 			else :
 				elog("unexpected key",key)
 
-		playlist_data = zip(ids,playlists)
+		playlist_data = list(zip(ids,playlists))
 		#dlog("got playlists",offset,limit)
 		app.addCachePlaylists(offset,limit,count,playlist_data)
 		self.dispatchResult(context,offset,limit,count,playlist_data)
@@ -346,7 +345,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			else :
 				elog("unexpected key",key)
 
-		track_data = zip(ids,tracks)
+		track_data = list(zip(ids,tracks))
 		#dlog("got tracks for",offset,limit)
 		app.addCachePlaylistTracks(playlistid,offset,limit,count,track_data)
 		self.dispatchResult(context,offset,limit,count,track_data)
@@ -474,7 +473,6 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			elif key == "id" :
 				ids.append(value)
 			elif key == "name" :
-				value = value.decode('utf-8')
 				names.append(value)
 			elif key == "title" or key == "type" or key == "isaudio" or key == "hasitems" :
 				pass
@@ -483,7 +481,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			else :
 				elog("unexpected key",key)
 
-		favorites_data = zip(ids,names)
+		favorites_data = list(zip(ids,names))
 		#dlog("got favorites for",offset,limit)
 		self.dispatchResult(context,offset,limit,count,favorites_data)
 
@@ -499,5 +497,5 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 	def send(self,*args) :
 		s = ''.join([str(arg) for arg in args])
 		dlog("sending to cli:",s)
-		self.transport.write(s)
-		self.transport.write('\r\n')
+		self.transport.write(s.encode('ascii', errors='ignore'))
+		self.transport.write(b'\r\n')

@@ -23,7 +23,7 @@ class RequestHTML(Resource) :
 
 		parameters = request.args
 		#dlog(parameters)
-		if parameters.has_key("action") :
+		if 'action' in parameters :
 			if parameters["action"][0] == "zone_on" :
 				zone_num = int(parameters["zone"][0])
 				if app.nuvo_protocol.isValidZone(zone_num) :
@@ -41,7 +41,7 @@ class RequestHTML(Resource) :
 
 		zones = app.nuvo_protocol.getZones()
 		strs = []
-		for (zoneid,zone) in zones.iteritems() :
+		for (zoneid,zone) in zones.items() :
 			strs.append("zone "+str(zone.getZoneID()) + "(" + zone.name + ")" + " : ")
 			if zone.isOn() :
 				strs.append("source " + str(zone.getSource()))
@@ -62,7 +62,7 @@ class RequestHTML(Resource) :
 		else :
 			# need to cleanse page of non a-z
 			page = processed_path[0]
-		 	path_parameters = processed_path[1:]
+			path_parameters = processed_path[1:]
 
 		if page == "favicon.ico" :
 			return ""

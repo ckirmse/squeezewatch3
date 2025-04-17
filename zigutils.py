@@ -23,15 +23,15 @@ def makeString(*args) :
 def nuvoEscape(s) :
 	retval = []
 	for ch in s.encode("ISO-8859-1") :
-		if ord(ch) >= 128 :
+		if ch >= 128 :
 			retval.append('_')
-		elif ch == '*' :
+		elif ch == ord('*') :
 		#if ch == '*' :
 			retval.append(r'\*')
-		elif ch == '"' :
+		elif ch == ord('"') :
 			retval.append(r'\"')
 		else :
-			retval.append(ch)
+			retval.append(chr(ch))
 	return ''.join(retval)
 
 def Func(base_level=0) :
@@ -41,7 +41,7 @@ def Func(base_level=0) :
 	# first check if we have an object to print out the class name
 	args, varargs, varkw, defaults = inspect.getargvalues(inspect.stack()[level][0])
 	prefix = ""
-	if defaults.has_key('self') :
+	if 'self' in defaults :
 		prefix = defaults['self'].__class__.__name__ + "."
 
 	return prefix + inspect.stack()[level][3] + "()"

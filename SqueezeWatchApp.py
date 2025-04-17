@@ -65,10 +65,10 @@ class SqueezeWatchApp :
 
 	def getArtists(self,d,offset,limit) :
 		# check cache and return data immediately if we have it
-		if self.artists.has_key(offset) :
+		if offset in self.artists :
 			artist_data = []
 			for i in range(offset,offset+limit) :
-				if self.artists.has_key(i) :
+				if i in self.artists :
 					artist_data.append(self.artists[i])
 			d.callback([offset,limit,self.count_artists,artist_data])
 			return
@@ -77,11 +77,11 @@ class SqueezeWatchApp :
 
 	def getArtistAlbums(self,d,artistid,offset,limit) :
 		# check cache and return data immediately if we have it
-		if self.artist_albums.has_key(artistid) :
-			if self.artist_albums[artistid].has_key(offset) :
+		if artistid in self.artist_albums :
+			if offset in self.artist_albums[artistid] :
 				album_data = []
 				for i in range(offset,offset+limit) :
-					if self.artist_albums[artistid].has_key(i) :
+					if i in self.artist_albums[artistid] :
 						album_data.append(self.artist_albums[artistid][i])
 				d.callback([offset,limit,self.count_artist_albums[artistid],album_data])
 				return
@@ -99,11 +99,11 @@ class SqueezeWatchApp :
 
 	def getAlbumTracks(self,d,albumid,offset,limit) :
 		# check cache and return data immediately if we have it
-		if self.album_tracks.has_key(albumid) :
-			if self.album_tracks[albumid].has_key(offset) :
+		if albumid in self.album_tracks :
+			if offset in self.album_tracks[albumid] :
 				track_data = []
 				for i in range(offset,offset+limit) :
-					if self.album_tracks[albumid].has_key(i) :
+					if i in self.album_tracks[albumid] :
 						track_data.append(self.album_tracks[albumid][i])
 				d.callback([offset,limit,self.count_album_tracks[albumid],track_data])
 				return
@@ -114,12 +114,12 @@ class SqueezeWatchApp :
 
 	def getPlaylistTracks(self,d,playlistid,offset,limit) :
 		# check cache and return data immediately if we have it
-		if self.playlist_tracks.has_key(playlistid) :
-			if self.playlist_tracks[playlistid].has_key(offset) :
+		if playlistid in self.playlist_tracks :
+			if offset in self.playlist_tracks[playlistid] :
 				#print "CCC returning playlist tracks from cache"
 				track_data = []
 				for i in range(offset,offset+limit) :
-					if self.playlist_tracks[playlistid].has_key(i) :
+					if i in self.playlist_tracks[playlistid] :
 						track_data.append(self.playlist_tracks[playlistid][i])
 				d.callback([offset,limit,self.count_playlist_tracks[playlistid],track_data])
 				return
@@ -175,7 +175,8 @@ class SqueezeWatchApp :
 	def setShuffle(self,d,source,shuffle) :
 		self.factory.setShuffle(d,self.source_player_map[source],shuffle)
 
-	def addCacheArtists(self,(offset,limit,count,artist_data)) :
+	def addCacheArtists(self, tuple_var) :
+		offset,limit,count,artist_data = tuple_var
 		#dlog("adding cache",count,artist_data)
 		index = offset
 		for (artistid,artist) in artist_data :
@@ -184,7 +185,7 @@ class SqueezeWatchApp :
 		self.count_artists = count
 
 	def addCacheAlbumTracks(self,albumid,offset,limit,count,track_data) :
-		if not self.album_tracks.has_key(albumid) :
+		if not albumid in self.album_tracks :
 			self.album_tracks[albumid] = {}
 		index = offset
 		for (trackid,track) in track_data :
@@ -193,7 +194,7 @@ class SqueezeWatchApp :
 		self.count_album_tracks[albumid] = count
 
 	def addCacheArtistAlbums(self,artistid,offset,limit,count,album_data) :
-		if not self.artist_albums.has_key(artistid) :
+		if not artistid in self.artist_albums :
 			self.artist_albums[artistid] = {}
 		index = offset
 		for (albumid,album) in album_data :
@@ -205,7 +206,7 @@ class SqueezeWatchApp :
 		self.count_playlists = count
 
 	def addCachePlaylistTracks(self,playlistid,offset,limit,count,track_data) :
-		if not self.playlist_tracks.has_key(playlistid) :
+		if not playlistid in self.playlist_tracks :
 			self.playlist_tracks[playlistid] = {}
 		index = offset
 		for (trackid,track) in track_data :
@@ -213,11 +214,13 @@ class SqueezeWatchApp :
 			index += 1
 		self.count_playlist_tracks[playlistid] = count
 
-	def addCacheFavorites(self,(offset,limit,count,favorites_data)) :
+	def addCacheFavorites(self,tuple_var) :
+		offset,limit,count,favorites_data = tuple_var
 		self.favorites = favorites_data
 		app.nuvo_protocol.answerFavorites(favorites_data)
 
-	def addCacheNewestAlbums(self,(album_data,)) :
+	def addCacheNewestAlbums(self,tuple_var) :
+		album_data, = tuple_var
 		self.newest_albums = album_data
 
 	def receivedPlayers(self,players) :

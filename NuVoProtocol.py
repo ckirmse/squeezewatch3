@@ -87,6 +87,7 @@ class NuVoProtocol(basic.LineReceiver) :
 		
 	def lineReceived(self,line) :
 		#dlog(line)
+		line = str(line, "utf-8")
 		if line == '#PING' :
 			self.receivedPing()
 			return
@@ -187,10 +188,10 @@ class NuVoProtocol(basic.LineReceiver) :
 		self.source_data[source]['playlist_shuffle'] = int(data['playlist shuffle'])
 
 		duration = 0
-		if data.has_key('duration') :
+		if 'duration' in data :
 			duration = int(10*float(data['duration']))
 		position = 0
-		if data.has_key('time') :
+		if 'time' in data :
 			position = int(10*float(data['time']))
 		if duration == 0 and duration > 0:
 			duration = 6000
@@ -210,10 +211,10 @@ class NuVoProtocol(basic.LineReceiver) :
 			mode = 3
 		
 		current_index = 0
-		if data.has_key('playlist_cur_index') :
+		if 'playlist_cur_index' in data :
 			current_index = int(data['playlist_cur_index']) + 1
 		total_tracks = 0
-		if data.has_key('playlist_tracks') :
+		if 'playlist_tracks' in data :
 			total_tracks = int(data['playlist_tracks'])
 		progress = ''
 		if total_tracks > 1 :
@@ -222,15 +223,15 @@ class NuVoProtocol(basic.LineReceiver) :
 		#print data
 
 		artist = ''
-		if data.has_key('artist') :
+		if 'artist' in data :
 			artist = data['artist']
 		album = ''
-		if data.has_key('album') :
+		if 'album' in data :
 			album = data['album']
-		elif data.has_key('current_title') :
+		elif 'current_title' in data :
 			album = data['current_title']
 		title = ''
-		if data.has_key('title') :
+		if 'title' in data :
 			title = data['title']
 
 		any_changed = False
@@ -258,7 +259,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.source_data[source]['dispinfo'] = dispinfo
 
 		if any_changed :
-			for (zone_num,zone) in self.zones.iteritems() :
+			for (zone_num,zone) in self.zones.items() :
 				if zone.getSource() == source :
 					zone.notifyStatusChanged()
 
@@ -468,7 +469,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			app.pause(source)
 
 	def isAnyZoneOnThisSource(self,source) :
-		for (zone_num,zone) in self.zones.iteritems() :
+		for (zone_num,zone) in self.zones.items() :
 			if zone.getSource() == source :
 				return True
 		return False
@@ -479,6 +480,6 @@ class NuVoProtocol(basic.LineReceiver) :
 			dlog("can't send to NuVo when we don't have a transport")
 			return
 		dlog("sending",s)
-		self.transport.write(s)
-		self.transport.write('\r')
+		self.transport.write(s.encode('ascii', errors='ignore'))
+		self.transport.write(b'\r')
 		time.sleep(0.002)
