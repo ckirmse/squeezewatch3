@@ -46,8 +46,8 @@ def Run() :
 	app.factory = SqueezeCLIFactory()
 	app.factory.protocol = SqueezeCLIProtocol
 
-	reactor.connectTCP("192.168.3.10",9090,app.factory)
-	#reactor.connectTCP("localhost",9090,app.factory)
+	#reactor.connectTCP("192.168.3.10",9090,app.factory)
+	reactor.connectTCP("localhost",9090,app.factory)
 	#reactor.connectTCP("mario",9090,app.factory)
 
 	factory = Site(RequestRoot())

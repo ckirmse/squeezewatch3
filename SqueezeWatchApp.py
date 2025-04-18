@@ -227,8 +227,13 @@ class SqueezeWatchApp :
 		self.players = players
 		sources = self.nuvo_protocol.getSources()
 		if len(self.players) != len(sources) :
-			dlog("got unexpected number of players",len(self.players))
-			sys.exit()
+			dlog("got unexpected number of players",len(self.players),"with sources", len(sources))
+			dlog(self.players, sources)
+			if len(sources) > len(self.players) :
+				self.players = self.players[:len(sources)]
+			else :
+				dlog("fatal more players than sources")
+				sys.exit()
 		# this is fragile... need to have a static mapping of
 		# source 3 -> player 00:00:00:01
 		# source 5 -> player whatever

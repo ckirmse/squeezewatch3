@@ -14,6 +14,7 @@ from SqueezeWatchApp import app
 class SqueezeCLIProtocol(basic.LineReceiver) :
 
 	def __init__(self) :
+		self.MAX_LENGTH = 200000
 		self.context_map = {}
 		self.next_context = 1
 
@@ -102,6 +103,9 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 	def connectionLost(self,reason) :
 		dlog("connection lost")
 
+	def lineLengthExceeded(self, line) :
+		dlog("line length exceeded")
+
 	def addContext(self,d) :
 		new_context = str(self.next_context)
 		self.next_context += 1
@@ -181,6 +185,8 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 				artists.append(value)
 			elif key == "context" :
 				context = value
+			elif key == "favorites_url" :
+				pass
 			else :
 				elog("unexpected key",key)
 
@@ -224,6 +230,8 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			elif key == "artist_id" :
 				dlog("got artist id",value)
 				artistid = value
+			elif key == "performance" or key == "favorites_url" or key == "favorites_title" :
+				pass
 			else :
 				elog("unexpected key",key)
 
@@ -483,7 +491,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 
 		favorites_data = list(zip(ids,names))
 		#dlog("got favorites for",offset,limit)
-		self.dispatchResult(context,offset,limit,count,favorites_data)
+		self.dispatchResult(context,favorites_data)
 
 	def receivedFavoritesChanged(self,m) :
 		app.receivedFavoritesChanged()

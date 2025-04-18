@@ -269,7 +269,8 @@ class NuVoProtocol(basic.LineReceiver) :
 	def answerShuffleStatus(self,source,shuffle_status) :
 		self.source_data[source]['playlist_shuffle'] = shuffle_status
 
-	def answerFavorites(self,favorites_data) :
+	def answerFavorites(self,tuple_var) :
+		favorites_data, = tuple_var
 		if not self.enabled :
 			return
 
