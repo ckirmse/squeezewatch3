@@ -156,7 +156,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			control_players.append(player["playerid"])
 
 		for player in control_players :
-			self.send(player," status - 1 subscribe:5")
+			self.send(player," status - 1 tags:gald subscribe:5")
 
 		app.receivedPlayers(control_players)
 
@@ -315,7 +315,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 				elog("unexpected key",key)
 
 		playlist_data = list(zip(ids,playlists))
-		#dlog("got playlists",offset,limit)
+		#dlog("got playlists",offset,limit,playlist_data)
 		app.addCachePlaylists(offset,limit,count,playlist_data)
 		self.dispatchResult(context,offset,limit,count,playlist_data)
 
@@ -354,7 +354,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 				elog("unexpected key",key)
 
 		track_data = list(zip(ids,tracks))
-		#dlog("got tracks for",offset,limit)
+		#dlog("got tracks for",offset,limit,track_data)
 		app.addCachePlaylistTracks(playlistid,offset,limit,count,track_data)
 		self.dispatchResult(context,offset,limit,count,track_data)
 
@@ -373,7 +373,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			(key,value) = m2.groups()
 			key = unquote(key)
 			value = unquote(value)
-			#print key,"=",value
+			#dlog(key,"=",value)
 			data[key] = value
 
 		app.receivedStatus(player,data)
