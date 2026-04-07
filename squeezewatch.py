@@ -34,8 +34,9 @@ def Run() :
 		#dlog("added",cmd_folder,"to system path")
 		sys.path.insert(0,cmd_folder)
 
-	app.nuvo_protocol = NuVoProtocol((5,))
+	#app.nuvo_protocol = NuVoProtocol((5,))
 	#app.nuvo_protocol = NuVoProtocol((3,5))
+	app.nuvo_protocol = NuVoProtocol((5,3))
 	# there are more serial settings that are correct on boot, but
 	# some apps can change them. We should set more here. If you have
 	# problems talking serial, try rebooting
@@ -46,8 +47,8 @@ def Run() :
 	app.factory = SqueezeCLIFactory()
 	app.factory.protocol = SqueezeCLIProtocol
 
-	#reactor.connectTCP("192.168.3.10",9090,app.factory)
-	reactor.connectTCP("localhost",9090,app.factory)
+	reactor.connectTCP("192.168.3.10",9090,app.factory)
+	#reactor.connectTCP("localhost",9090,app.factory)
 	#reactor.connectTCP("mario",9090,app.factory)
 
 	factory = Site(RequestRoot())
