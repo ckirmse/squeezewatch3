@@ -1,4 +1,6 @@
 todo
+fix favorites not working on startup
+fix players not working on startup
 maybe get source names on startup?
 add ajax stuff for display
 add volume controls in web

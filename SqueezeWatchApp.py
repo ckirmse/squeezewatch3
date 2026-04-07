@@ -214,8 +214,7 @@ class SqueezeWatchApp :
 			index += 1
 		self.count_playlist_tracks[playlistid] = count
 
-	def addCacheFavorites(self,tuple_var) :
-		offset,limit,count,favorites_data = tuple_var
+	def addCacheFavorites(self,favorites_data) :
 		self.favorites = favorites_data
 		app.nuvo_protocol.answerFavorites(favorites_data)
 

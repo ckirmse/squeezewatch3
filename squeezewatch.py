@@ -34,7 +34,7 @@ def Run() :
 		#dlog("added",cmd_folder,"to system path")
 		sys.path.insert(0,cmd_folder)
 
-	app.nuvo_protocol = NuVoProtocol((3,))
+	app.nuvo_protocol = NuVoProtocol((5,))
 	#app.nuvo_protocol = NuVoProtocol((3,5))
 	# there are more serial settings that are correct on boot, but
 	# some apps can change them. We should set more here. If you have
