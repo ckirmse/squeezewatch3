@@ -1,7 +1,7 @@
 todo
-fix favorites not working on startup
-fix players not working on startup
 maybe get source names on startup?
+when on wiim input, get track info from the wiim (see wiim-httpapi
+add paging capability
 add ajax stuff for display
 add volume controls in web
 add track controls in web
@@ -12,3 +12,7 @@ use templates for html
 zone idle turning off
 get zone names on startup
 set time on startup *CFGTIME
+fix favorites not working on startup
+fix players not working on startup
+get source data and config on startup https://smarthomebus.com/dealers/Protocols/NUVO%20Protocol.pdf
+set per-source gain on startup

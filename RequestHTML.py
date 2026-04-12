@@ -36,7 +36,7 @@ class RequestHTML(Resource) :
 				app.nuvo_protocol.sendAllOff()
 
 
-		raw_path = re.split("/",request.path)
+		raw_path = re.split("/",request.path.decode("utf-8"))
 		processed_path = [s for s in raw_path if s != '']
 
 		zones = app.nuvo_protocol.getZones()
@@ -67,6 +67,6 @@ class RequestHTML(Resource) :
 		if page == "favicon.ico" :
 			return ""
 
-		#dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
+		dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
 
 		return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')

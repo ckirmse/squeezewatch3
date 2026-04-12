@@ -14,12 +14,14 @@ from Log import *
 from NuVoZone import NuVoZone
 from SqueezeWatchApp import app
 
+DESIRED_GAIN = 14
+
 class NuVoProtocol(basic.LineReceiver) :
 
 	def __init__(self,sources) :
 		self.enabled = False
 		self.pending_restart = False
-		
+
 		self.sources = sources;
 		self.source_strs = [str(x) for x in self.sources];
 
@@ -84,7 +86,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			dlog("got a timer on a non-minute boundary",now.second)
 
 		reactor.callLater(60-(now.second + now.microsecond/1000000),self.notifyTimer)
-		
+
 	def lineReceived(self,line) :
 		#dlog(line)
 		line = str(line, "utf-8")
@@ -157,6 +159,10 @@ class NuVoProtocol(basic.LineReceiver) :
 		if m :
 			self.receivedZoneConfigStatus(m)
 			return
+		m = re.match(r'#SCFG(\d+),ENABLE1,NAME"(.*)",GAIN(\d+),NUVONET([01]),SHORTNAME"(.*)"',line)
+		if m :
+			self.receivedSourceConfigStatus(m)
+			return
 		dlog("unhandled:",line)
 
 	def connectionMade(self) :
@@ -204,12 +210,12 @@ class NuVoProtocol(basic.LineReceiver) :
 				mode = 7
 			elif self.source_data[source]['playlist_repeat'] == 0 and self.source_data[source]['playlist_shuffle'] > 0 :
 				mode = 6
-			
+
 		elif data['mode'] == 'stop' :
 			mode = 0
 		elif data['mode'] == 'pause' :
 			mode = 3
-		
+
 		current_index = 0
 		if 'playlist_cur_index' in data :
 			current_index = int(data['playlist_cur_index']) + 1
@@ -252,7 +258,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			any_changed = True
 			self.send(displines)
 			self.source_data[source]['displines'] = displines
-	
+
 		if dispinfo != self.source_data[source]['dispinfo'] :
 			any_changed = True
 			self.send(dispinfo)
@@ -351,6 +357,9 @@ class NuVoProtocol(basic.LineReceiver) :
 		d.addCallback(self.answerFavorites)
 		app.getFavorites(d,0,20)
 
+		for i in range(1, 7) :
+			self.send('*SCFG',str(i),'STATUS?')
+
 	def sendTopLevelMenuItems(self) :
 		try :
 			file = open("/tmp/weatherinfo.txt")
@@ -376,6 +385,17 @@ class NuVoProtocol(basic.LineReceiver) :
 		(zone_num, name) = m.groups()
 		zone_num = int(zone_num)
 		self.zones[zone_num] = NuVoZone(self,zone_num,name)
+
+	def receivedSourceConfigStatus(self,m) :
+		(source, name, gain, is_nuvonet, short_name) = m.groups()
+		source = int(source)
+		gain = int(gain)
+		is_nuvonet = int(is_nuvonet)
+		#dlog("nuvo source", source, "has gain", gain)
+		if source in self.sources :
+			if gain != DESIRED_GAIN :
+				self.send('*SCFG',source,'GAIN',DESIRED_GAIN)
+
 
 	def receivedButton(self,m) :
 		#print "got button"
@@ -413,7 +433,7 @@ class NuVoProtocol(basic.LineReceiver) :
 		#dlog("got menuid",menuid)
 
 		#print "zone_num",zone_num,"source",source,"menuid",menuid,"up",up,"location",location,"itemindex",itemindex
-		
+
 		zone = self.zones[zone_num]
 		zone.receivedMenuRequest(source,menuid,up,location,itemindex)
 
