@@ -54,6 +54,10 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		if m :
 			# ignore, it just mean we paused/unpaused
 			return
+		m = re.match(r'\S+ power',line)
+		if m :
+			# ignore, it just mean we turned on/off
+			return
 		m = re.match(r'(\S+) playlist repeat\s+(\d+)\s+(.*)',line)
 		if m :
 			self.receivedPlaylistRepeat(m)
@@ -98,7 +102,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		#self.transport.write("listen 1\r\n")
 		#self.send("displaystatus subscribe:update")
 		#self.transport.write("button arrow_down\r\n")
-		
+
 
 	def connectionLost(self,reason) :
 		dlog("connection lost")
@@ -116,7 +120,7 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 		d = self.context_map[context]
 		del self.context_map[context]
 		d.callback(args)
-	
+
 	def receivedPlayers(self,m) :
 		(offset,limit,rest) = m.groups()
 		offset = int(offset)
