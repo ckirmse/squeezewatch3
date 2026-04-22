@@ -89,7 +89,7 @@ class NuVoProtocol(basic.LineReceiver) :
 
 	def lineReceived(self,line) :
 		#dlog(line)
-		line = str(line, "utf-8")
+		line = str(line, "latin1")
 		if line == '#PING' :
 			self.receivedPing()
 			return
@@ -414,6 +414,9 @@ class NuVoProtocol(basic.LineReceiver) :
 
 		#print "zone_num",zone_num,"source",source,"button",button,"action",action,"menuid",menuid,"itemid",itemid,"itemindex",itemindex
 
+		if not self.isValidZone(zone_num) :
+			dlog("received button for unknown zone",zone_num)
+			return
 		zone = self.zones[zone_num]
 		zone.receivedButton(source,button,action,menuid,itemid,itemindex)
 
@@ -434,6 +437,9 @@ class NuVoProtocol(basic.LineReceiver) :
 
 		#print "zone_num",zone_num,"source",source,"menuid",menuid,"up",up,"location",location,"itemindex",itemindex
 
+		if not self.isValidZone(zone_num) :
+			dlog("menu request for unknown zone",zone_num)
+			return
 		zone = self.zones[zone_num]
 		zone.receivedMenuRequest(source,menuid,up,location,itemindex)
 
@@ -447,6 +453,9 @@ class NuVoProtocol(basic.LineReceiver) :
 		zone_num = int(zone_num)
 		exit = int(exit)
 		#print "zone_num",zone_num,"source",source,"menuid",menuid,"exit",exit
+		if not self.isValidZone(zone_num) :
+			dlog("menu active for unknown zone",zone_num)
+			return
 		zone = self.zones[zone_num]
 		zone.receivedMenuActive(exit)
 
@@ -468,6 +477,9 @@ class NuVoProtocol(basic.LineReceiver) :
 		(zone_num,) = m.groups()
 		zone_num = int(zone_num)
 		#dlog("received zone",zone_num,"off")
+		if not self.isValidZone(zone_num) :
+			dlog("zone off for unknown zone",zone_num)
+			return
 		zone = self.zones[zone_num]
 		source = zone.getSource()
 		zone.receivedOff()
@@ -483,6 +495,9 @@ class NuVoProtocol(basic.LineReceiver) :
 		zone_num = int(zone_num)
 		source = int(source)
 		#dlog("received zone",zone_num,"on source",source)
+		if not self.isValidZone(zone_num) :
+			dlog("zone on for unknown zone",zone_num)
+			return
 		zone = self.zones[zone_num]
 		zone.receivedOnSource(source)
 		# auto-pause if no one listening

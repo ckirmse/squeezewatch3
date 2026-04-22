@@ -33,7 +33,7 @@ class SqueezeWatchApp :
 		self.count_playlist_tracks = {}
 
 		self.favorites = {}
-		
+
 		self.newest_albums = {}
 
 		d = defer.Deferred()
@@ -85,7 +85,7 @@ class SqueezeWatchApp :
 						album_data.append(self.artist_albums[artistid][i])
 				d.callback([offset,limit,self.count_artist_albums[artistid],album_data])
 				return
-		
+
 		self.factory.getArtistAlbums(d,artistid,offset,limit)
 
 	def getNewestAlbums(self,d) :
@@ -132,25 +132,45 @@ class SqueezeWatchApp :
 		self.factory.getFavorites(d,offset,limit)
 
 	def playArtist(self,source,artistid) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.playArtist(self.source_player_map[source],artistid)
 
 	def playAlbum(self,source,albumid,offset=0) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.playAlbum(self.source_player_map[source],albumid,offset)
 
 	def playPlaylist(self,source,playlistid,offset=0) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.playPlaylist(self.source_player_map[source],playlistid,offset)
 
 	def playFavorite(self,source,favoriteid) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.playFavorite(self.source_player_map[source],favoriteid)
 
 	def playPause(self,source) :
-		dlog("looking for source",source)
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.playPause(self.source_player_map[source])
 
 	def pause(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.pause(self.source_player_map[source])
 
 	def powerOff(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.powerOff(self.source_player_map[source])
 
 	def getStatus(self,source) :
@@ -158,21 +178,39 @@ class SqueezeWatchApp :
 			self.factory.getStatus(player)
 
 	def prevTrack(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.prevTrack(self.source_player_map[source])
 
 	def nextTrack(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.nextTrack(self.source_player_map[source])
 
 	def rewind(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.rewind(self.source_player_map[source])
 
 	def fastForward(self,source) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.fastForward(self.source_player_map[source])
 
 	def setRepeat(self,d,source,repeat) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.setRepeat(d,self.source_player_map[source],repeat)
 
 	def setShuffle(self,d,source,shuffle) :
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
 		self.factory.setShuffle(d,self.source_player_map[source],shuffle)
 
 	def addCacheArtists(self, tuple_var) :
@@ -291,4 +329,3 @@ class SqueezeWatchApp :
 		return source
 
 app = SqueezeWatchApp()
-
