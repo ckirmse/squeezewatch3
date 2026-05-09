@@ -391,10 +391,14 @@ class NuVoProtocol(basic.LineReceiver) :
 		source = int(source)
 		gain = int(gain)
 		is_nuvonet = int(is_nuvonet)
+		desired_gain = 0
+		if is_nuvonet :
+			desired_gain = DESIRED_GAIN
 		#dlog("nuvo source", source, "has gain", gain)
 		if source in self.sources :
-			if gain != DESIRED_GAIN :
-				self.send('*SCFG',source,'GAIN',DESIRED_GAIN)
+			if gain != desired_gain :
+				dlog("setting source",source,"to gain",desired_gain)
+				self.send('*SCFG',source,'GAIN',desired_gain)
 
 
 	def receivedButton(self,m) :
