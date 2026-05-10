@@ -490,11 +490,13 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 				pass
 			elif key == "context" :
 				context = value
+			elif key == "image" :
+				pass
 			else :
 				elog("unexpected key",key)
 
 		favorites_data = list(zip(ids,names))
-		#dlog("got favorites for",offset,limit)
+		#dlog("got favorites for",offset,limit,favorites_data)
 		self.dispatchResult(context,favorites_data)
 
 	def receivedFavoritesChanged(self,m) :

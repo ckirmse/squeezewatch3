@@ -361,11 +361,11 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.send('*SCFG',str(i),'STATUS?')
 
 	def sendTopLevelMenuItems(self) :
-		try :
-			file = open("/tmp/weatherinfo.txt")
-			line = file.readline().rstrip()
-		except IOError as e:
-			line = "Unknown info"
+		#try :
+		#	file = open("/tmp/weatherinfo.txt")
+		#	line = file.readline().rstrip()
+		#except IOError as e:
+		#	line = "Unknown info"
 
 		for source in self.sources :
 			source_str = str(source)
@@ -374,7 +374,7 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.send('*S' + source_str + 'MENUITEM2,1,0,"Playlists"')
 			self.send('*S' + source_str + 'MENUITEM3,1,0,"New Music"')
 			self.send('*S' + source_str + 'MENUITEM4,1,0,"Settings"')
-			self.send('*S' + source_str + 'MENUITEM5,4,0,"' + line + '"')
+			#self.send('*S' + source_str + 'MENUITEM5,4,0,"' + line + '"')
 
 	def receivedPing(self) :
 		#print "responding to ping"

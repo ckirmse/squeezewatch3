@@ -184,7 +184,7 @@ class NuVoZone :
 			index += 1
 			self.artist_albums_menu_map[index] = (albumid,album)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,3,album)
-		
+
 	def answerAlbumTracks(self,tuple_var) :
 		offset,limit,count,track_data = tuple_var
 		#dlog("have",len(track_data),"tracks")
@@ -194,7 +194,7 @@ class NuVoZone :
 			index += 1
 			self.artist_album_tracks_menu_map[index] = (trackid,track)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,2,str(index) + ". " + track)
-		
+
 	def answerPlaylists(self,tuple_var) :
 		offset,limit,count,playlist_data = tuple_var
 		#dlog("have",len(playlist_data),"playlists")
@@ -376,7 +376,7 @@ class NuVoZone :
 				self.nuvo.sendExitMenu(self.source,self.zone)
 				self.setState(self.StateMain)
 			return
-				
+
 		if menuid == self.menuid_playlists :
 			if button == 1 :
 				# OK
@@ -412,7 +412,7 @@ class NuVoZone :
 				self.nuvo.sendExitMenu(self.source,self.zone)
 				self.setState(self.StateMain)
 			return
-			
+
 		if menuid == self.menuid_settings :
 			if button == 1 :
 				# OK
@@ -465,7 +465,7 @@ class NuVoZone :
 			else :
 				elog("receivedMenuRequest unknown state ",self.state)
 			return
-		
+
 		if menuid == self.menuid_artists :
 			if location == 0 :
 				# home button
@@ -557,7 +557,7 @@ class NuVoZone :
 			return
 
 		elog('unknown menu',menuid)
-		
+
 	def receivedMenuActive(self,exit) :
 		if exit :
 			self.setState(self.StateMain)
@@ -567,7 +567,7 @@ class NuVoZone :
 		if self.idle_timer != None :
 			self.idle_timer.cancel()
 			self.idle_timer = None
-	
+
 	def receivedOnSource(self,source) :
 		self.source = source
 		self.resetIdleTimer()
@@ -596,7 +596,7 @@ class NuVoZone :
 		if self.idle_timer != None :
 			#dlog("zone",self.zone,"status changed")
 			self.idle_timer.reset(self.idle_time)
-		
+
 	def notifyIdleTimer(self) :
 		dlog("idle timeout for zone",self.zone)
 		self.idle_timer = None
@@ -610,4 +610,3 @@ class NuVoZone :
 	def holdingNext(self) :
 		app.fastForward(self.source)
 		self.next_delayed_call = reactor.callLater(self.press_skip_subsequent_delay,self.holdingNext)
-
