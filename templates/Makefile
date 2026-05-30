@@ -1,6 +1,6 @@
 .DEFAULT: all
 
-CHEETAH := $(shell command -v cheetah 2>/dev/null || echo $(HOME)/Library/Python/3.9/bin/cheetah)
+CHEETAH := $(shell command -v cheetah3 2>/dev/null)
 
 %.py : %.tmpl
 	$(CHEETAH) compile $<
