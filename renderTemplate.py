@@ -42,8 +42,7 @@ def renderTemplate(request,page,parameters,path_parameters,render_function) :
 		request.setResponseCode(404)
 		return ""
 
-	# need to wrap with str() because it can't handle unicode
 	s = str(func())
 
-	return s
+	return s.encode("utf-8")
 

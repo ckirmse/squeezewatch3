@@ -1,7 +1,9 @@
 .DEFAULT: all
 
+CHEETAH := $(shell command -v cheetah 2>/dev/null || echo $(HOME)/Library/Python/3.9/bin/cheetah)
+
 %.py : %.tmpl
-	cheetah compile $<
+	$(CHEETAH) compile $<
 
 TEMPLATES = \
 	home.tmpl \

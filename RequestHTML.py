@@ -65,7 +65,7 @@ class RequestHTML(Resource) :
 			path_parameters = processed_path[1:]
 
 		if page == "favicon.ico" :
-			return ""
+			return b""
 
 		dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
 

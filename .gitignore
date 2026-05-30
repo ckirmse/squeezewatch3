@@ -1,2 +1,4 @@
 *.pyc
-*.txt
+log.txt
+debug.txt
+error.txt
