@@ -197,7 +197,7 @@ class NuVoProtocol(basic.LineReceiver) :
 		if 'duration' in data :
 			duration = int(10*float(data['duration']))
 		position = 0
-		if 'time' in data :
+		if 'time' in data and len(data['time']) > 0 :
 			position = int(10*float(data['time']))
 		if duration == 0 and duration > 0:
 			duration = 6000
