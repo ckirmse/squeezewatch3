@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
-from Cheetah.Template import Template
-
 from Log import *
 
-class RequestLogic(Template) :
+class RequestLogic :
 
-	def __init__(self,request,*args,**kw) :
+	def __init__(self,request,page,parameters,path_parameters) :
 		self.request = request
+		self.page = page
+		self.parameters = parameters
+		self.path_parameters = path_parameters
 
-		Template.__init__(self)
+	def get_context(self) :
+		return {}

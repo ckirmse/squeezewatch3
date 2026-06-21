@@ -47,7 +47,7 @@ async def handle(request: Request, path: str) :
 
 	dlog("render HTML page", page, "path parameters:", ".".join(path_parameters))
 
-	result = renderTemplate(request, page, parameters, path_parameters, 'renderHTMLPage')
+	result = renderTemplate(request, page, parameters, path_parameters)
 	if result is None :
 		return HTMLResponse(content="Not Found", status_code=404)
 	return HTMLResponse(content=result.decode('utf-8'))

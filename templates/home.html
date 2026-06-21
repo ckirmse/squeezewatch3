@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Audio Zones</title></head>
+<body>
+<h1>Audio Zones</h1>
+{% for zone in zones %}
+<div>
+  Zone {{ zone.id }} ({{ zone.name }}) &mdash;
+  {% if zone.is_on %}
+    Source {{ zone.source }}
+    <a href="?action=zone_off&amp;zone={{ zone.id }}">Turn Off</a>
+  {% else %}
+    <a href="?action=zone_on&amp;zone={{ zone.id }}">Turn On</a>
+  {% endif %}
+</div>
+{% endfor %}
+<p><a href="?action=all_off">All Off</a></p>
+</body>
+</html>

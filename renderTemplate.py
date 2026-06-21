@@ -1,28 +1,26 @@
 #!/usr/bin/python
 
+import jinja2
+
 from Log import *
 
-def renderTemplate(request,page,parameters,path_parameters,render_function) :
+_env = jinja2.Environment(loader=jinja2.FileSystemLoader('templates'))
 
-	template_class = None
+def renderTemplate(request,page,parameters,path_parameters) :
 
 	try :
-		mod = __import__(page)
-		template_class = getattr(mod,page)
+		mod = __import__(page + 'Logic')
+		logic_class = getattr(mod,page + 'Logic')
 	except (ImportError, AttributeError) :
 		dlog("page not found:",page)
-
-	if template_class is None :
 		return None
 
-	template = template_class(request=request,page=page,parameters=parameters,
-							  path_parameters=path_parameters)
+	logic = logic_class(request,page,parameters,path_parameters)
 
-	func = getattr(template,render_function,None)
-	if not func :
-		elog("function",render_function,"not implemented in page",template_class)
+	try :
+		template = _env.get_template(page + '.html')
+	except jinja2.TemplateNotFound :
+		dlog("template not found:",page)
 		return None
 
-	s = str(func())
-
-	return s.encode("utf-8")
+	return template.render(**logic.get_context()).encode('utf-8')
