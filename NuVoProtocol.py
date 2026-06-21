@@ -1,12 +1,9 @@
 #!/usr/bin/python
 
-import datetime
-import time
+import asyncio
 import re
 
-from twisted.protocols import basic
-from twisted.internet import defer
-from twisted.internet import reactor
+import defer
 
 from zigutils import *
 from Log import *
@@ -16,11 +13,15 @@ from SqueezeWatchApp import app
 
 DESIRED_GAIN = 14
 
-class NuVoProtocol(basic.LineReceiver) :
+class NuVoProtocol(asyncio.Protocol) :
 
 	def __init__(self,sources) :
+		self.transport = None
 		self.enabled = False
 		self.pending_restart = False
+		self._buf = b''
+		self._write_queue = None
+		self._drain_task = None
 
 		self.sources = sources;
 		self.source_strs = [str(x) for x in self.sources];
@@ -38,7 +39,35 @@ class NuVoProtocol(basic.LineReceiver) :
 
 		self.zones = {}
 
-		reactor.callLater(3,self.notifyTimer)
+	def connection_made(self, transport) :
+		self.transport = transport
+		self._write_queue = asyncio.Queue()
+		self._drain_task = asyncio.get_event_loop().create_task(self._drain_write_queue())
+		dlog("connection made to NuVo")
+		self.send('*RESTART')
+		asyncio.get_event_loop().call_later(3, self.notifyTimer)
+
+	def connection_lost(self, exc) :
+		dlog("connection lost from NuVo")
+		if self._drain_task :
+			self._drain_task.cancel()
+			self._drain_task = None
+		self.transport = None
+
+	async def _drain_write_queue(self) :
+		while True :
+			data = await self._write_queue.get()
+			if self.transport :
+				self.transport.write(data)
+			await asyncio.sleep(0.002)
+
+	def data_received(self, data) :
+		self._buf += data
+		while b'\r' in self._buf :
+			line, self._buf = self._buf.split(b'\r', 1)
+			line = line.strip(b'\n')
+			if line :
+				self.line_received(line)
 
 	def start(self) :
 		self.enabled = True
@@ -80,14 +109,14 @@ class NuVoProtocol(basic.LineReceiver) :
 				if sleep_time <= 0 :
 					sleep_time += 24*60*60
 				dlog("callback in",sleep_time,"seconds")
-				reactor.callLater(sleep_time,self.notifyTimer)
+				asyncio.get_event_loop().call_later(sleep_time,self.notifyTimer)
 				return
 		else :
 			dlog("got a timer on a non-minute boundary",now.second)
 
-		reactor.callLater(60-(now.second + now.microsecond/1000000),self.notifyTimer)
+		asyncio.get_event_loop().call_later(60-(now.second + now.microsecond/1000000),self.notifyTimer)
 
-	def lineReceived(self,line) :
+	def line_received(self,line) :
 		#dlog(line)
 		line = str(line, "latin1")
 		if line == '#PING' :
@@ -164,14 +193,6 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.receivedSourceConfigStatus(m)
 			return
 		dlog("unhandled:",line)
-
-	def connectionMade(self) :
-		dlog("connection made to NuVo")
-		#self.send('*_DISABLEPING')
-		self.send('*RESTART')
-
-	def connectionLost(self,reason) :
-		dlog("connection lost from NuVo")
 
 	def getRepeatStatus(self,source) :
 		return self.source_data[source]['playlist_repeat']
@@ -361,12 +382,6 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.send('*SCFG',str(i),'STATUS?')
 
 	def sendTopLevelMenuItems(self) :
-		#try :
-		#	file = open("/tmp/weatherinfo.txt")
-		#	line = file.readline().rstrip()
-		#except IOError as e:
-		#	line = "Unknown info"
-
 		for source in self.sources :
 			source_str = str(source)
 			self.send('*S' + source_str + 'MENU,5')
@@ -374,7 +389,6 @@ class NuVoProtocol(basic.LineReceiver) :
 			self.send('*S' + source_str + 'MENUITEM2,1,0,"Playlists"')
 			self.send('*S' + source_str + 'MENUITEM3,1,0,"New Music"')
 			self.send('*S' + source_str + 'MENUITEM4,1,0,"Settings"')
-			#self.send('*S' + source_str + 'MENUITEM5,4,0,"' + line + '"')
 
 	def receivedPing(self) :
 		#print "responding to ping"
@@ -520,6 +534,5 @@ class NuVoProtocol(basic.LineReceiver) :
 			dlog("can't send to NuVo when we don't have a transport")
 			return
 		dlog("sending",s)
-		self.transport.write(s.encode('ascii', errors='ignore'))
-		self.transport.write(b'\r')
-		time.sleep(0.002)
+		data = s.encode('ascii', errors='ignore') + b'\r'
+		self._write_queue.put_nowait(data)

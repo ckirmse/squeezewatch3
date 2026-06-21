@@ -2,7 +2,7 @@
 
 import sys
 
-from twisted.internet import defer
+import defer
 
 from Log import *
 

@@ -2,71 +2,52 @@
 
 import re
 
-from twisted.web.resource import Resource
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, Response
 
 from Log import *
 
 from renderTemplate import renderTemplate
 
-from SqueezeWatchApp import app
+from SqueezeWatchApp import app as squeeze_app
 
-class RequestHTML(Resource) :
+http_app = FastAPI()
 
-	isLeaf = True
+@http_app.get("/{path:path}")
+async def handle(request: Request, path: str) :
 
-	def __init__(self,page) :
-		self.page = page
+	parameters = {}
+	for key in request.query_params.keys() :
+		parameters[key] = request.query_params.getlist(key)
 
-	def render_GET(self,request) :
+	if 'action' in parameters :
+		if parameters["action"][0] == "zone_on" :
+			zone_num = int(parameters["zone"][0])
+			if squeeze_app.nuvo_protocol.isValidZone(zone_num) :
+				squeeze_app.nuvo_protocol.sendZoneOn(zone_num)
+		elif parameters["action"][0] == "zone_off" :
+			zone_num = int(parameters["zone"][0])
+			if squeeze_app.nuvo_protocol.isValidZone(zone_num) :
+				squeeze_app.nuvo_protocol.sendZoneOff(zone_num)
+		elif parameters["action"][0] == "all_off" :
+			squeeze_app.nuvo_protocol.sendAllOff()
 
-		request.setHeader("Content-Type","text/html")
+	raw_path = re.split("/", path)
+	processed_path = [s for s in raw_path if s != '']
 
-		parameters = request.args
-		#dlog(parameters)
-		if 'action' in parameters :
-			if parameters["action"][0] == "zone_on" :
-				zone_num = int(parameters["zone"][0])
-				if app.nuvo_protocol.isValidZone(zone_num) :
-					app.nuvo_protocol.sendZoneOn(zone_num)
-			elif parameters["action"][0] == "zone_off" :
-				zone_num = int(parameters["zone"][0])
-				if app.nuvo_protocol.isValidZone(zone_num) :
-					app.nuvo_protocol.sendZoneOff(zone_num)
-			elif parameters["action"][0] == "all_off" :
-				app.nuvo_protocol.sendAllOff()
+	if len(processed_path) == 0 :
+		page = "home"
+		path_parameters = []
+	else :
+		page = processed_path[0]
+		path_parameters = processed_path[1:]
 
+	if page == "favicon.ico" :
+		return Response(content=b"", media_type="image/x-icon")
 
-		raw_path = re.split("/",request.path.decode("utf-8"))
-		processed_path = [s for s in raw_path if s != '']
+	dlog("render HTML page", page, "path parameters:", ".".join(path_parameters))
 
-		zones = app.nuvo_protocol.getZones()
-		strs = []
-		for (zoneid,zone) in zones.items() :
-			strs.append("zone "+str(zone.getZoneID()) + "(" + zone.name + ")" + " : ")
-			if zone.isOn() :
-				strs.append("source " + str(zone.getSource()))
-				strs.append(" <a href=\"?action=zone_off&zone=" + str(zone.getZoneID()) + "\">Turn Off</a>")
-			else :
-				strs.append("<a href=\"?action=zone_on&zone=" + str(zone.getZoneID()) + "\">Turn On</a>")
-
-			strs.append("<br/>\n")
-		strs.append("<a href=\"?action=all_off\">All Off</a>")
-
-		#return "".join(strs)
-
-		#dlog("page is",self.page,"path is","/".join(processed_path))
-
-		if len(processed_path) == 0 :
-		 	page = "home"
-		 	path_parameters = []
-		else :
-			# need to cleanse page of non a-z
-			page = processed_path[0]
-			path_parameters = processed_path[1:]
-
-		if page == "favicon.ico" :
-			return b""
-
-		dlog("render HTML page",page,"path parameters:",".".join(path_parameters))
-
-		return renderTemplate(request,page,parameters,path_parameters,'renderHTMLPage')
+	result = renderTemplate(request, page, parameters, path_parameters, 'renderHTMLPage')
+	if result is None :
+		return HTMLResponse(content="Not Found", status_code=404)
+	return HTMLResponse(content=result.decode('utf-8'))

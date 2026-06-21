@@ -1,24 +1,53 @@
 #!/usr/bin/python
 
+import asyncio
 import re
 
 from urllib.parse import unquote
-
-from twisted.protocols import basic
 
 from Log import *
 
 from SqueezeWatchApp import app
 
 
-class SqueezeCLIProtocol(basic.LineReceiver) :
+class SqueezeCLIProtocol(asyncio.Protocol) :
 
-	def __init__(self) :
-		self.MAX_LENGTH = 200000
+	def __init__(self, factory) :
+		self.factory = factory
+		self.transport = None
+		self._buf = b''
+		self._disconnected = asyncio.Event()
 		self.context_map = {}
 		self.next_context = 1
 
-	def lineReceived(self,line) :
+	async def wait_disconnected(self) :
+		await self._disconnected.wait()
+
+	def connection_made(self, transport) :
+		self.transport = transport
+		self._disconnected.clear()
+		dlog("connection made")
+		self.factory.notifyConnectionMade(self)
+
+		self.send("subscribe playlist,favorites,client,rescan")
+
+		# get info on the players out there - should parse "client" messages to know when changed
+		self.send("players 0 5")
+
+	def connection_lost(self, exc) :
+		dlog("connection lost")
+		self.transport = None
+		self._disconnected.set()
+
+	def data_received(self, data) :
+		self._buf += data
+		while b'\n' in self._buf :
+			line, self._buf = self._buf.split(b'\n', 1)
+			line = line.rstrip(b'\r')
+			if line :
+				self.line_received(line)
+
+	def line_received(self, line) :
 		#dlog("cli result",line)
 		line = str(line, "utf-8")
 
@@ -88,27 +117,6 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 			return
 		dlog("unknown line:",line)
 
-
-	def connectionMade(self) :
-		dlog("connection made")
-		self.factory.notifyConnectionMade(self)
-
-		self.send("subscribe playlist,favorites,client,rescan")
-
-		# get info on the players out there - should parse "client" messages to know when changed
-		self.send("players 0 5")
-
-		#self.transport.write("displaynow ? ?\r\n")
-		#self.transport.write("listen 1\r\n")
-		#self.send("displaystatus subscribe:update")
-		#self.transport.write("button arrow_down\r\n")
-
-
-	def connectionLost(self,reason) :
-		dlog("connection lost")
-
-	def lineLengthExceeded(self, line) :
-		dlog("line length exceeded")
 
 	def addContext(self,d) :
 		new_context = str(self.next_context)
@@ -511,5 +519,8 @@ class SqueezeCLIProtocol(basic.LineReceiver) :
 	def send(self,*args) :
 		s = ''.join([str(arg) for arg in args])
 		dlog("sending to cli:",s)
+		if not self.transport :
+			dlog("can't send to LMS when not connected")
+			return
 		self.transport.write(s.encode('ascii', errors='ignore'))
 		self.transport.write(b'\r\n')

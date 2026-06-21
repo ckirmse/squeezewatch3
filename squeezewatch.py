@@ -1,14 +1,10 @@
 #!/usr/bin/python
 
+import asyncio
 import os
 import sys
 
-from twisted.internet.protocol import Factory
-from twisted.internet import reactor
-
-from twisted.web.server import Site
-
-from twisted.internet.serialport import SerialPort
+import uvicorn
 
 from Log import *
 
@@ -19,44 +15,51 @@ from SqueezeCLIProtocol import SqueezeCLIProtocol
 
 from NuVoProtocol import NuVoProtocol
 
-from RequestRoot import RequestRoot
+from RequestHTML import http_app
+
 
 def Init(*args) :
 	Log.init(*args)
 
 
-def Run() :
-	log("starting app")
+async def connect_lms(factory) :
+	loop = asyncio.get_running_loop()
+	delay = 5
+	while True :
+		try :
+			log("Connecting to LMS...")
+			proto = SqueezeCLIProtocol(factory)
+			await loop.create_connection(lambda: proto, 'mario', 9090)
+			await proto.wait_disconnected()
+			log("LMS connection lost, will reconnect")
+		except OSError as e :
+			log("LMS connect failed:", e)
+		await asyncio.sleep(delay)
+
+
+async def main() :
+	loop = asyncio.get_running_loop()
 
 	cmd_folder = os.path.dirname(os.path.abspath("templates/home.py"))
-	#dlog("cmd_folder is",cmd_folder)
 	if cmd_folder not in sys.path :
-		#dlog("added",cmd_folder,"to system path")
-		sys.path.insert(0,cmd_folder)
+		sys.path.insert(0, cmd_folder)
 
-	#app.nuvo_protocol = NuVoProtocol((5,))
-	#app.nuvo_protocol = NuVoProtocol((3,5))
 	app.nuvo_protocol = NuVoProtocol((5,3))
-	# there are more serial settings that are correct on boot, but
-	# some apps can change them. We should set more here. If you have
-	# problems talking serial, try rebooting
-	#serport = SerialPort(app.nuvo_protocol,"/dev/ttyUSB0",reactor,baudrate=57600)
-	serport = SerialPort(app.nuvo_protocol,"/dev/ttyS0",reactor,baudrate=57600)
 
-	# listen to incoming maintenance text connections
 	app.factory = SqueezeCLIFactory()
-	app.factory.protocol = SqueezeCLIProtocol
+	asyncio.ensure_future(connect_lms(app.factory))
 
-	#reactor.connectTCP("192.168.3.10",9090,app.factory)
-	#reactor.connectTCP("localhost",9090,app.factory)
-	reactor.connectTCP("mario",9090,app.factory)
+	import serial_asyncio
+	try :
+		await serial_asyncio.create_serial_connection(
+			loop, lambda: app.nuvo_protocol, '/dev/ttyS0', baudrate=57600)
+	except Exception as e :
+		log("Serial port unavailable:", e)
 
-	factory = Site(RequestRoot())
-	reactor.listenTCP(8000,factory)
-
-	reactor.run()
+	config = uvicorn.Config(http_app, host='0.0.0.0', port=8000, log_level='warning')
+	server = uvicorn.Server(config)
+	await server.serve()
 
 
 Init()
-Run()
-
+asyncio.run(main())

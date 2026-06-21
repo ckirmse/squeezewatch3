@@ -1,15 +1,13 @@
 #!/usr/bin/python
 
-from twisted.internet import defer
-from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.internet import reactor
+import defer
 
 from zigutils import *
 from Log import *
 
 from SqueezeWatchApp import app
 
-class SqueezeCLIFactory(ReconnectingClientFactory) :
+class SqueezeCLIFactory :
 
 	def __init__(self) :
 		self.connector = None
@@ -17,7 +15,7 @@ class SqueezeCLIFactory(ReconnectingClientFactory) :
 	def getArtists(self,d,offset,limit) :
 		if not self.connector :
 			return
-		
+
 		context = self.connector.addContext(d)
 		self.connector.send("artists ",offset," ",limit," context:",context)
 
@@ -44,7 +42,7 @@ class SqueezeCLIFactory(ReconnectingClientFactory) :
 	def getPlaylists(self,d,offset,limit) :
 		if not self.connector :
 			return
-		
+
 		context = self.connector.addContext(d)
 		self.connector.send("playlists ",offset," ",limit," context:",context)
 
@@ -145,14 +143,14 @@ class SqueezeCLIFactory(ReconnectingClientFactory) :
 	def setRepeat(self,d,player,repeat) :
 		if not self.connector :
 			return
-		
+
 		context = self.connector.addContext(d)
 		self.connector.send(player," playlist repeat ",repeat," context:",context)
 
 	def setShuffle(self,d,player,shuffle) :
 		if not self.connector :
 			return
-		
+
 		context = self.connector.addContext(d)
 		self.connector.send(player," playlist shuffle ",shuffle," context:",context)
 
@@ -168,20 +166,3 @@ class SqueezeCLIFactory(ReconnectingClientFactory) :
 		log("Connected to",connector)
 		self.connector = connector
 		app.resetAll()
-
-	### callbacks from ClientFactory
-
-	def startedConnecting(self,connector) :
-		log("Connecting to ",connector)
-
-	def clientConnectionFailed(self,connector,reason) :
-		dlog("Connect attempt failed:",reason.getErrorMessage())
-		ReconnectingClientFactory.clientConnectionFailed(self,connector,reason)
-
-	def clientConnectionLost(self,connector,reason) :
-		log("Disconnected:",reason.getErrorMessage())
-		self.connector = None
-		ReconnectingClientFactory.clientConnectionLost(self,connector,reason)
-
-
-
