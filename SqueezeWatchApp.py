@@ -238,7 +238,6 @@ class SqueezeWatchApp :
 
 	def addCacheFavorites(self,favorites_data) :
 		self.favorites = favorites_data
-		app.nuvo_protocol.answerFavorites(favorites_data)
 
 	def addCacheNewestAlbums(self,tuple_var) :
 		album_data, = tuple_var
@@ -299,6 +298,7 @@ class SqueezeWatchApp :
 		result = await self.getFavorites(0,20)
 		if result :
 			self.addCacheFavorites(result)
+			app.nuvo_protocol.answerFavorites(result)
 
 	def receivedRescanDone(self) :
 		self.resetCaches()
