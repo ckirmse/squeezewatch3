@@ -47,16 +47,23 @@ async def zone_status(zone_id: int) :
 		"mode": mode,
 	})
 
+@http_app.get("/api/zone/{zone_id}/favorites")
+async def zone_favorites(zone_id: int) :
+	result = await squeeze_app.getFavorites(0, 100)
+	if not result :
+		return JSONResponse({"favorites": []})
+	favorites_data, = result
+	return JSONResponse({
+		"favorites": [{"id": favorite_id, "name": name} for favorite_id, name in favorites_data]
+	})
+
 @http_app.get("/api/zone/{zone_id}/action")
-async def zone_action(zone_id: int, action: str = "") :
+async def zone_action(zone_id: int, action: str = "", favorite_id: str = "") :
 	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
 		return JSONResponse(status_code=404, content={"error": "zone not found"})
 
 	zone = squeeze_app.nuvo_protocol.getZone(zone_id)
 	source = zone.getSource()
-
-	if source == 0 :
-		return JSONResponse({"ok": False, "error": "zone is off"})
 
 	if action == "zone_on" :
 		squeeze_app.nuvo_protocol.sendZoneOn(zone_id)
@@ -70,6 +77,8 @@ async def zone_action(zone_id: int, action: str = "") :
 		squeeze_app.nextTrack(source)
 	elif action == "prev_track" :
 		squeeze_app.prevTrack(source)
+	elif action == "play_favorite" :
+		squeeze_app.playFavorite(source, favorite_id)
 
 	return JSONResponse({"ok": True})
 

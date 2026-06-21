@@ -22,6 +22,11 @@
 
 <p id="zonestatus"></p>
 
+<div style="margin-top:10px;">
+  <button onclick="toggleFavorites()">Favorites</button>
+</div>
+<ul id="favorites-list" style="display:none; list-style:none; padding:0; margin-top:5px; max-height:300px; overflow-y:auto;"></ul>
+
 <script>
 var zoneId = {{ zone_id }};
 var zoneIsOn = false;
@@ -64,6 +69,40 @@ function poll() {
 
 poll();
 setInterval(poll, 1000);
+
+var favoritesLoaded = false;
+
+function toggleFavorites() {
+  var list = document.getElementById('favorites-list');
+  if (list.style.display === 'none') {
+    list.style.display = '';
+    if (!favoritesLoaded) {
+      loadFavorites();
+    }
+  } else {
+    list.style.display = 'none';
+  }
+}
+
+function loadFavorites() {
+  fetch('/api/zone/' + zoneId + '/favorites')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      favoritesLoaded = true;
+      var list = document.getElementById('favorites-list');
+      list.textContent = '';
+      data.favorites.forEach(function(favorite) {
+        var item = document.createElement('li');
+        var button = document.createElement('button');
+        button.textContent = favorite.name;
+        button.onclick = function() {
+          fetch('/api/zone/' + zoneId + '/action?action=play_favorite&favorite_id=' + encodeURIComponent(favorite.id));
+        };
+        item.appendChild(button);
+        list.appendChild(item);
+      });
+    });
+}
 </script>
 </body>
 </html>
