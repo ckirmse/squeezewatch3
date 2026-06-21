@@ -19,7 +19,7 @@ sleep 1
 
 echo ""
 echo "=== Running squeezewatch for ${RUN_SECONDS}s on $REMOTE ==="
-ssh "$REMOTE" "cd $REMOTE_DIR && python3 squeezewatch.py >/dev/null 2>stderr.txt & echo \$!; sleep $RUN_SECONDS; pkill -f squeezewatch.py 2>/dev/null || true"
+ssh -o ServerAliveInterval=5 "$REMOTE" "cd $REMOTE_DIR && python3 squeezewatch.py >/dev/null 2>stderr.txt & echo \$!; sleep $RUN_SECONDS; pkill -f squeezewatch.py 2>/dev/null; true" || true
 
 echo ""
 echo "=== Copying logs from $REMOTE ==="
