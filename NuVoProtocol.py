@@ -3,8 +3,6 @@
 import asyncio
 import re
 
-import defer
-
 from zigutils import *
 from Log import *
 
@@ -382,12 +380,15 @@ class NuVoProtocol(asyncio.Protocol) :
 		for i in range(1,17) :
 			self.send("*ZCFG",str(i),"STATUS?")
 
-		d = defer.Deferred()
-		d.addCallback(self.answerFavorites)
-		app.getFavorites(d,0,20)
+		asyncio.get_event_loop().create_task(self._init_favorites())
 
 		for i in range(1, 7) :
 			self.send('*SCFG',str(i),'STATUS?')
+
+	async def _init_favorites(self) :
+		result = await app.getFavorites(0,20)
+		if result :
+			self.answerFavorites(result)
 
 	def sendTopLevelMenuItems(self) :
 		for source in self.sources :

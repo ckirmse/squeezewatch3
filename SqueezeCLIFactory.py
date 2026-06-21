@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import defer
+import asyncio
 
 from zigutils import *
 from Log import *
@@ -12,51 +12,61 @@ class SqueezeCLIFactory :
 	def __init__(self) :
 		self.connector = None
 
-	def getArtists(self,d,offset,limit) :
+	async def getArtists(self,offset,limit) :
 		if not self.connector :
-			return
-
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("artists ",offset," ",limit," context:",context)
+		return await future
 
-	def getArtistAlbums(self,d,artistid,offset,limit) :
+	async def getArtistAlbums(self,artistid,offset,limit) :
 		if not self.connector :
-			return
-
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("albums ",offset," ",limit," artist_id:",artistid," context:",context)
+		return await future
 
-	def getNewestAlbums(self,d,offset,limit) :
+	async def getNewestAlbums(self,offset,limit) :
 		if not self.connector :
-			return
-
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("albums ",offset," ",limit," sort:new"," tags:la"," context:",context)
+		return await future
 
-	def getAlbumTracks(self,d,albumid,offset,limit) :
+	async def getAlbumTracks(self,albumid,offset,limit) :
 		if not self.connector :
-			return
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("titles ",offset," ",limit," tags:t sort:tracknum album_id:",albumid," context:",context)
+		return await future
 
-	def getPlaylists(self,d,offset,limit) :
+	async def getPlaylists(self,offset,limit) :
 		if not self.connector :
-			return
-
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("playlists ",offset," ",limit," context:",context)
+		return await future
 
-	def getPlaylistTracks(self,d,playlistid,offset,limit) :
+	async def getPlaylistTracks(self,playlistid,offset,limit) :
 		if not self.connector :
-			return
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("playlists tracks ",offset," ",limit," tags:t playlist_id:",playlistid," context:",context)
+		return await future
 
-	def getFavorites(self,d,offset,limit) :
+	async def getFavorites(self,offset,limit) :
 		if not self.connector :
-			return
-		context = self.connector.addContext(d)
+			return None
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send("favorites items ",offset," ",limit," context:",context)
+		return await future
 
 	def playArtist(self,player,artistid) :
 		if not self.connector :
@@ -66,25 +76,32 @@ class SqueezeCLIFactory :
 	def playAlbum(self,player,albumid,offset) :
 		if not self.connector :
 			return
-		context_str = ""
 		if offset :
-			d = defer.Deferred()
-			d.addCallback(self.setPlaylistOffset,player,offset)
-			context = self.connector.addContext(d)
-			context_str = " context:" + context
-		self.connector.send(player," playlistcontrol cmd:load album_id:",albumid,context_str)
+			asyncio.get_event_loop().create_task(self._playAlbumWithOffset(player,albumid,offset))
+		else :
+			self.connector.send(player," playlistcontrol cmd:load album_id:",albumid)
+
+	async def _playAlbumWithOffset(self,player,albumid,offset) :
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
+		self.connector.send(player," playlistcontrol cmd:load album_id:",albumid," context:",context)
+		await future
+		self.connector.send(player," playlist index +",offset)
 
 	def playPlaylist(self,player,playlistid,offset) :
 		if not self.connector :
 			return
-
-		context_str = ""
 		if offset :
-			d = defer.Deferred()
-			d.addCallback(self.setPlaylistOffset,player,offset)
-			context = self.connector.addContext(d)
-			context_str = " context:" + context
-		self.connector.send(player," playlistcontrol cmd:load playlist_id:",playlistid,context_str)
+			asyncio.get_event_loop().create_task(self._playPlaylistWithOffset(player,playlistid,offset))
+		else :
+			self.connector.send(player," playlistcontrol cmd:load playlist_id:",playlistid)
+
+	async def _playPlaylistWithOffset(self,player,playlistid,offset) :
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
+		self.connector.send(player," playlistcontrol cmd:load playlist_id:",playlistid," context:",context)
+		await future
+		self.connector.send(player," playlist index +",offset)
 
 	def playFavorite(self,player,favoriteid) :
 		if not self.connector :
@@ -140,25 +157,21 @@ class SqueezeCLIFactory :
 
 		self.connector.send(player," time +30")
 
-	def setRepeat(self,d,player,repeat) :
+	async def setRepeat(self,player,repeat) :
 		if not self.connector :
 			return
-
-		context = self.connector.addContext(d)
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send(player," playlist repeat ",repeat," context:",context)
+		await future
 
-	def setShuffle(self,d,player,shuffle) :
+	async def setShuffle(self,player,shuffle) :
 		if not self.connector :
 			return
-
-		context = self.connector.addContext(d)
+		future = asyncio.get_event_loop().create_future()
+		context = self.connector.addContext(future)
 		self.connector.send(player," playlist shuffle ",shuffle," context:",context)
-
-	### callbacks from our deferreds to chain requests
-
-	def setPlaylistOffset(self,result,player,offset) :
-		"Called by a deferred from playAlbum or playPlaylist to start within a list"
-		self.connector.send(player," playlist index +",offset)
+		await future
 
 	### callbacks from our protocol
 

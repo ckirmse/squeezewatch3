@@ -3,8 +3,6 @@
 import asyncio
 import time
 
-import defer
-
 from Log import *
 
 from SqueezeWatchApp import app
@@ -126,30 +124,17 @@ class NuVoZone :
 		if self.state == self.StateMain :
 			pass
 		elif self.state == self.StateArtists :
-			d = defer.Deferred()
-			d.addCallback(self.answerArtists,first_in_state=True)
-			app.getArtists(d,0,20)
+			asyncio.get_event_loop().create_task(self._fetch_artists(0,first_in_state=True))
 		elif self.state == self.StateArtistAlbums :
-			d = defer.Deferred()
-			d.addCallback(self.answerArtistAlbums)
-			#print "sending for artist albums",self.menu_artistid
-			app.getArtistAlbums(d,self.menu_artistid,0,20)
+			asyncio.get_event_loop().create_task(self._fetch_artist_albums(0))
 		elif self.state == self.StateArtistAlbumTracks :
-			d = defer.Deferred()
-			d.addCallback(self.answerAlbumTracks)
-			app.getAlbumTracks(d,self.menu_artist_albumid,0,20)
+			asyncio.get_event_loop().create_task(self._fetch_album_tracks(0))
 		elif self.state == self.StatePlaylists :
-			d = defer.Deferred()
-			d.addCallback(self.answerPlaylists)
-			app.getPlaylists(d,0,20)
+			asyncio.get_event_loop().create_task(self._fetch_playlists(0))
 		elif self.state == self.StatePlaylistTracks :
-			d = defer.Deferred()
-			d.addCallback(self.answerPlaylistTracks)
-			app.getPlaylistTracks(d,self.menu_playlistid,0,20)
+			asyncio.get_event_loop().create_task(self._fetch_playlist_tracks(0))
 		elif self.state == self.StateNewestAlbums :
-			d = defer.Deferred()
-			d.addCallback(self.answerNewestAlbums)
-			app.getNewestAlbums(d)
+			asyncio.get_event_loop().create_task(self._fetch_newest_albums())
 		elif self.state == self.StateSettings :
 			self.sendSettingsMenu()
 
@@ -209,11 +194,6 @@ class NuVoZone :
 			self.playlist_menu_map[index] = (playlistid,playlist)
 			self.nuvo.sendMenuItem(self.source,self.zone,index,3,playlist)
 
-	def answerSettingsChanged(self,junk) :
-		# if still in settings mode, redisplay menu
-		if self.state == self.StateSettings :
-			self.sendSettingsMenu()
-
 	def answerPlaylistTracks(self,tuple_var) :
 		offset,limit,count,track_data = tuple_var
 		#dlog("have",len(track_data),"tracks")
@@ -263,6 +243,46 @@ class NuVoZone :
 			shuffle_str += 'Unknown ' + str(shuffle)
 		self.nuvo.sendMenuItem(self.source,self.zone,1,2,repeat_str)
 		self.nuvo.sendMenuItem(self.source,self.zone,2,2,shuffle_str)
+
+	async def _fetch_artists(self,start,first_in_state=False) :
+		result = await app.getArtists(start,20)
+		if result :
+			self.answerArtists(result,first_in_state=first_in_state)
+
+	async def _fetch_artist_albums(self,start) :
+		result = await app.getArtistAlbums(self.menu_artistid,start,20)
+		if result :
+			self.answerArtistAlbums(result)
+
+	async def _fetch_album_tracks(self,start) :
+		result = await app.getAlbumTracks(self.menu_artist_albumid,start,20)
+		if result :
+			self.answerAlbumTracks(result)
+
+	async def _fetch_playlists(self,start) :
+		result = await app.getPlaylists(start,20)
+		if result :
+			self.answerPlaylists(result)
+
+	async def _fetch_playlist_tracks(self,start) :
+		result = await app.getPlaylistTracks(self.menu_playlistid,start,20)
+		if result :
+			self.answerPlaylistTracks(result)
+
+	async def _fetch_newest_albums(self) :
+		result = await app.getNewestAlbums()
+		if result :
+			self.answerNewestAlbums(result)
+
+	async def _change_setting(self,itemindex) :
+		if itemindex == 0 :
+			await app.setRepeat(self.source,self.nuvo.getNextRepeatStatus(self.source))
+		elif itemindex == 1 :
+			await app.setShuffle(self.source,self.nuvo.getNextShuffleStatus(self.source))
+		else :
+			elog("Unknown settings item",itemindex)
+		if self.state == self.StateSettings :
+			self.sendSettingsMenu()
 
 	def receivedButton(self,source,button,action,menuid,itemid,itemindex) :
 		source = int(source)
@@ -416,14 +436,7 @@ class NuVoZone :
 		if menuid == self.menuid_settings :
 			if button == 1 :
 				# OK
-				d = defer.Deferred()
-				d.addCallback(self.answerSettingsChanged)
-				if itemindex == 0 :
-					app.setRepeat(d,self.source,self.nuvo.getNextRepeatStatus(self.source))
-				elif itemindex == 1 :
-					app.setShuffle(d,self.source,self.nuvo.getNextShuffleStatus(self.source))
-				else :
-					elog("Unknown settings item",itemindex)
+				asyncio.get_event_loop().create_task(self._change_setting(itemindex))
 			elif button == 2 :
 				pass
 			return
@@ -468,92 +481,62 @@ class NuVoZone :
 
 		if menuid == self.menuid_artists :
 			if location == 0 :
-				# home button
 				start = 0
 			elif location == 1 :
-				# end button
 				start = max(0,app.getCountArtists()-19)
 			elif location == 2 :
-				# start with itemindex
 				start = itemindex
 			elif location == 3 :
-				# end with itemindex
 				start = max(0,itemindex-19)
-			d = defer.Deferred()
-			d.addCallback(self.answerArtists)
-			app.getArtists(d,start,20)
+			asyncio.get_event_loop().create_task(self._fetch_artists(start))
 			return
 
 		elif menuid == self.menuid_artist_albums :
 			if location == 0 :
-				# home button
 				start = 0
 			elif location == 1 :
-				# end button
 				start = max(0,app.getCountArtistAlbums(self.menu_artistid)-19)
 			elif location == 2 :
-				# start with itemindex
 				start = itemindex
 			elif location == 3 :
-				# end with itemindex
 				start = max(0,itemindex-19)
-			d = defer.Deferred()
-			d.addCallback(self.answerArtistAlbums)
-			app.getArtistAlbums(d,self.menu_artistid,start,20)
+			asyncio.get_event_loop().create_task(self._fetch_artist_albums(start))
 			return
 
 		elif menuid == self.menuid_artist_album_tracks :
 			if location == 0 :
-				# home button
 				start = 0
 			elif location == 1 :
-				# end button
 				start = max(0,app.getCountAlbumTracks(self.menu_artist_albumid)-19)
 			elif location == 2 :
-				# start with itemindex
 				start = itemindex
 			elif location == 3 :
-				# end with itemindex
 				start = max(0,itemindex-19)
-			d = defer.Deferred()
-			d.addCallback(self.answerAlbumTracks)
-			app.getAlbumTracks(d,self.menu_artist_albumid,start,20)
+			asyncio.get_event_loop().create_task(self._fetch_album_tracks(start))
 			return
 
 		if menuid == self.menuid_playlists :
 			if location == 0 :
-				# home button
 				start = 0
 			elif location == 1 :
-				# end button
 				start = max(0,app.getCountPlaylists()-19)
 			elif location == 2 :
-				# start with itemindex
 				start = itemindex
 			elif location == 3 :
-				# end with itemindex
 				start = max(0,itemindex-19)
-			d = defer.Deferred()
-			d.addCallback(self.answerPlaylists)
-			app.getPlaylists(d,start,20)
+			asyncio.get_event_loop().create_task(self._fetch_playlists(start))
 			return
 
 		if menuid == self.menuid_playlist_tracks :
 			if location == 0 :
-				# home button
 				start = 0
 			elif location == 1 :
-				# end button
 				start = max(0,app.getCountPlaylistTracks(self.menu_playlistid)-19)
 			elif location == 2 :
-				# start with itemindex
 				start = itemindex
 			elif location == 3 :
-				# end with itemindex
 				start = max(0,itemindex-19)
-			d = defer.Deferred()
-			d.addCallback(self.answerPlaylistTracks)
-			app.getPlaylistTracks(d,self.menu_playlistid,start,20)
+			asyncio.get_event_loop().create_task(self._fetch_playlist_tracks(start))
 			return
 
 		elog('unknown menu',menuid)

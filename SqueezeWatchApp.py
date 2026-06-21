@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
+import asyncio
 import sys
-
-import defer
 
 from Log import *
 
@@ -36,17 +35,18 @@ class SqueezeWatchApp :
 
 		self.newest_albums = {}
 
-		d = defer.Deferred()
-		d.addCallback(self.addCacheArtists)
-		self.getArtists(d,0,99999)
+		asyncio.get_event_loop().create_task(self._prefill_caches())
 
-		d = defer.Deferred()
-		d.addCallback(self.addCacheFavorites)
-		self.getFavorites(d,0,20)
-
-		d = defer.Deferred()
-		d.addCallback(self.addCacheNewestAlbums)
-		self.getNewestAlbums(d)
+	async def _prefill_caches(self) :
+		result = await self.getArtists(0,99999)
+		if result :
+			self.addCacheArtists(result)
+		result = await self.getFavorites(0,20)
+		if result :
+			self.addCacheFavorites(result)
+		result = await self.getNewestAlbums()
+		if result :
+			self.addCacheNewestAlbums(result)
 
 	def getCountArtists(self) :
 		return self.count_artists
@@ -63,73 +63,57 @@ class SqueezeWatchApp :
 	def getCountPlaylistTracks(self,playlistid) :
 		return self.count_playlist_tracks[playlistid]
 
-	def getArtists(self,d,offset,limit) :
-		# check cache and return data immediately if we have it
+	async def getArtists(self,offset,limit) :
 		if offset in self.artists :
 			artist_data = []
 			for i in range(offset,offset+limit) :
 				if i in self.artists :
 					artist_data.append(self.artists[i])
-			d.callback([offset,limit,self.count_artists,artist_data])
-			return
+			return (offset,limit,self.count_artists,artist_data)
+		return await self.factory.getArtists(offset,limit)
 
-		self.factory.getArtists(d,offset,limit)
-
-	def getArtistAlbums(self,d,artistid,offset,limit) :
-		# check cache and return data immediately if we have it
+	async def getArtistAlbums(self,artistid,offset,limit) :
 		if artistid in self.artist_albums :
 			if offset in self.artist_albums[artistid] :
 				album_data = []
 				for i in range(offset,offset+limit) :
 					if i in self.artist_albums[artistid] :
 						album_data.append(self.artist_albums[artistid][i])
-				d.callback([offset,limit,self.count_artist_albums[artistid],album_data])
-				return
+				return (offset,limit,self.count_artist_albums[artistid],album_data)
+		return await self.factory.getArtistAlbums(artistid,offset,limit)
 
-		self.factory.getArtistAlbums(d,artistid,offset,limit)
-
-	def getNewestAlbums(self,d) :
-		# check cache and return data immediately if we have it
-		# note we essentially ignore offset & limit on queries after the first
+	async def getNewestAlbums(self) :
 		if self.newest_albums :
-			d.callback([self.newest_albums])
-			return
+			return (self.newest_albums,)
+		return await self.factory.getNewestAlbums(0,12)
 
-		self.factory.getNewestAlbums(d,0,12)
-
-	def getAlbumTracks(self,d,albumid,offset,limit) :
-		# check cache and return data immediately if we have it
+	async def getAlbumTracks(self,albumid,offset,limit) :
 		if albumid in self.album_tracks :
 			if offset in self.album_tracks[albumid] :
 				track_data = []
 				for i in range(offset,offset+limit) :
 					if i in self.album_tracks[albumid] :
 						track_data.append(self.album_tracks[albumid][i])
-				d.callback([offset,limit,self.count_album_tracks[albumid],track_data])
-				return
-		self.factory.getAlbumTracks(d,albumid,offset,limit)
+				return (offset,limit,self.count_album_tracks[albumid],track_data)
+		return await self.factory.getAlbumTracks(albumid,offset,limit)
 
-	def getPlaylists(self,d,offset,limit) :
-		self.factory.getPlaylists(d,offset,limit)
+	async def getPlaylists(self,offset,limit) :
+		return await self.factory.getPlaylists(offset,limit)
 
-	def getPlaylistTracks(self,d,playlistid,offset,limit) :
-		# check cache and return data immediately if we have it
+	async def getPlaylistTracks(self,playlistid,offset,limit) :
 		if playlistid in self.playlist_tracks :
 			if offset in self.playlist_tracks[playlistid] :
-				#print "CCC returning playlist tracks from cache"
 				track_data = []
 				for i in range(offset,offset+limit) :
 					if i in self.playlist_tracks[playlistid] :
 						track_data.append(self.playlist_tracks[playlistid][i])
-				d.callback([offset,limit,self.count_playlist_tracks[playlistid],track_data])
-				return
-		self.factory.getPlaylistTracks(d,playlistid,offset,limit)
+				return (offset,limit,self.count_playlist_tracks[playlistid],track_data)
+		return await self.factory.getPlaylistTracks(playlistid,offset,limit)
 
-	def getFavorites(self,d,offset,limit) :
-		if len(self.favorites) > 0 :
-			d.callback(self.favorites)
-			return
-		self.factory.getFavorites(d,offset,limit)
+	async def getFavorites(self,offset,limit) :
+		if self.favorites :
+			return self.favorites
+		return await self.factory.getFavorites(offset,limit)
 
 	def playArtist(self,source,artistid) :
 		if not source in self.source_player_map :
@@ -201,17 +185,17 @@ class SqueezeWatchApp :
 			return
 		self.factory.fastForward(self.source_player_map[source])
 
-	def setRepeat(self,d,source,repeat) :
+	async def setRepeat(self,source,repeat) :
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
-		self.factory.setRepeat(d,self.source_player_map[source],repeat)
+		await self.factory.setRepeat(self.source_player_map[source],repeat)
 
-	def setShuffle(self,d,source,shuffle) :
+	async def setShuffle(self,source,shuffle) :
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
-		self.factory.setShuffle(d,self.source_player_map[source],shuffle)
+		await self.factory.setShuffle(self.source_player_map[source],shuffle)
 
 	def addCacheArtists(self, tuple_var) :
 		offset,limit,count,artist_data = tuple_var
@@ -309,18 +293,18 @@ class SqueezeWatchApp :
 	def receivedFavoritesChanged(self) :
 		self.nuvo_protocol.clearFavorites()
 		self.favorites = {}
-		d = defer.Deferred()
-		d.addCallback(self.addCacheFavorites)
-		self.getFavorites(d,0,20)
+		asyncio.get_event_loop().create_task(self._refresh_favorites())
+
+	async def _refresh_favorites(self) :
+		result = await self.getFavorites(0,20)
+		if result :
+			self.addCacheFavorites(result)
 
 	def receivedRescanDone(self) :
 		self.resetCaches()
 
 	def getSourceForPlayer(self,player) :
 		source = None
-		#dlog("source player map is")
-		#for s in self.source_player_map.keys() :
-		#	dlog(s," ",self.source_player_map[s])
 		for s in self.source_player_map.keys() :
 			p = self.source_player_map[s]
 			if p == player :

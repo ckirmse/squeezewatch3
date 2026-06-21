@@ -118,16 +118,15 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		dlog("unknown line:",line)
 
 
-	def addContext(self,d) :
+	def addContext(self,future) :
 		new_context = str(self.next_context)
 		self.next_context += 1
-		self.context_map[new_context] = d
+		self.context_map[new_context] = future
 		return new_context
 
 	def dispatchResult(self,context,*args) :
-		d = self.context_map[context]
-		del self.context_map[context]
-		d.callback(args)
+		future = self.context_map.pop(context)
+		future.set_result(args)
 
 	def receivedPlayers(self,m) :
 		(offset,limit,rest) = m.groups()
