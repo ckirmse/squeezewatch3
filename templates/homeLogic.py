@@ -18,6 +18,6 @@ class homeLogic(RequestLogic) :
 					'is_on'  : zone.isOn(),
 					'source' : zone.getSource(),
 				}
-				for zone_id,zone in zones.items()
+				for zone_id,zone in sorted(zones.items())
 			]
 		}

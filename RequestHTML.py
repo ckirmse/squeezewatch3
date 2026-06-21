@@ -3,7 +3,7 @@
 import re
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from Log import *
 
@@ -12,6 +12,66 @@ from renderTemplate import renderTemplate
 from SqueezeWatchApp import app as squeeze_app
 
 http_app = FastAPI()
+
+@http_app.get("/api/zone/{zone_id}/status")
+async def zone_status(zone_id: int) :
+	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
+		return JSONResponse(status_code=404, content={"error": "zone not found"})
+
+	zone = squeeze_app.nuvo_protocol.getZone(zone_id)
+	source = zone.getSource()
+
+	lines = ["", "", "", ""]
+	mode = "unknown"
+
+	if source != 0 :
+		display_lines = squeeze_app.nuvo_protocol.getDisplayLines(source)
+		for i in range(4) :
+			lines[i] = display_lines.get(i + 1, "")
+		status = squeeze_app.nuvo_protocol.source_data[source]['playback_mode']
+		if status == 0 :
+			mode = "stop"
+		elif status == 2 :
+			mode = "play"
+		elif status == 3 :
+			mode = "pause"
+		elif status is not None :
+			mode = "play"
+
+	return JSONResponse({
+		"zone_id": zone_id,
+		"zone_name": zone.name,
+		"is_on": zone.isOn(),
+		"source": source,
+		"lines": lines,
+		"mode": mode,
+	})
+
+@http_app.get("/api/zone/{zone_id}/action")
+async def zone_action(zone_id: int, action: str = "") :
+	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
+		return JSONResponse(status_code=404, content={"error": "zone not found"})
+
+	zone = squeeze_app.nuvo_protocol.getZone(zone_id)
+	source = zone.getSource()
+
+	if source == 0 :
+		return JSONResponse({"ok": False, "error": "zone is off"})
+
+	if action == "zone_on" :
+		squeeze_app.nuvo_protocol.sendZoneOn(zone_id)
+	elif action == "zone_off" :
+		squeeze_app.nuvo_protocol.sendZoneOff(zone_id)
+	elif source == 0 :
+		return JSONResponse({"ok": False, "error": "zone is off"})
+	elif action == "play_pause" :
+		squeeze_app.playPause(source)
+	elif action == "next_track" :
+		squeeze_app.nextTrack(source)
+	elif action == "prev_track" :
+		squeeze_app.prevTrack(source)
+
+	return JSONResponse({"ok": True})
 
 @http_app.get("/{path:path}")
 async def handle(request: Request, path: str) :

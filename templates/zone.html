@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ zone_name }}</title>
+</head>
+<body>
+<h1>{{ zone_name }} <button id="onoff" onclick="doOnOff()"></button></h1>
+<p><a href="/">Back</a></p>
+
+<div id="display" style="font-family:monospace; background:#000; color:#0f0; padding:10px; width:320px; min-height:80px;">
+  <div id="line1">&nbsp;</div>
+  <div id="line2">&nbsp;</div>
+  <div id="line3">&nbsp;</div>
+  <div id="line4">&nbsp;</div>
+</div>
+
+<div style="margin-top:10px;">
+  <button onclick="doAction('prev_track')">&lt;&lt; Prev</button>
+  <button id="playpause" onclick="doAction('play_pause')">Play/Pause</button>
+  <button onclick="doAction('next_track')">Next &gt;&gt;</button>
+</div>
+
+<p id="zonestatus"></p>
+
+<script>
+var zoneId = {{ zone_id }};
+var zoneIsOn = false;
+
+function doAction(action) {
+  fetch('/api/zone/' + zoneId + '/action?action=' + action);
+}
+
+function doOnOff() {
+  if (zoneIsOn) {
+    doAction('zone_off');
+    zoneIsOn = false;
+    document.getElementById('onoff').textContent = 'Turn On';
+  } else {
+    doAction('zone_on');
+    zoneIsOn = true;
+    document.getElementById('onoff').textContent = 'Turn Off';
+  }
+}
+
+function updateDisplay(data) {
+  document.getElementById('line1').textContent = data.lines[0] || ' ';
+  document.getElementById('line2').textContent = data.lines[1] || ' ';
+  document.getElementById('line3').textContent = data.lines[2] || ' ';
+  document.getElementById('line4').textContent = data.lines[3] || ' ';
+
+  var button = document.getElementById('playpause');
+  button.textContent = data.mode === 'play' ? 'Pause' : 'Play';
+
+  zoneIsOn = data.is_on;
+  document.getElementById('onoff').textContent = data.is_on ? 'Turn Off' : 'Turn On';
+  document.getElementById('zonestatus').textContent = data.is_on ? ('Source ' + data.source) : 'Off';
+}
+
+function poll() {
+  fetch('/api/zone/' + zoneId + '/status')
+    .then(function(response) { return response.json(); })
+    .then(updateDisplay);
+}
+
+poll();
+setInterval(poll, 1000);
+</script>
+</body>
+</html>

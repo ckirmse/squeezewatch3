@@ -5,7 +5,7 @@
 <h1>Audio Zones</h1>
 {% for zone in zones %}
 <div>
-  Zone {{ zone.id }} ({{ zone.name }}) &mdash;
+  <a href="/zone/{{ zone.id }}">Zone {{ zone.id }} ({{ zone.name }})</a> &mdash;
   {% if zone.is_on %}
     Source {{ zone.source }}
     <a href="?action=zone_off&amp;zone={{ zone.id }}">Turn Off</a>

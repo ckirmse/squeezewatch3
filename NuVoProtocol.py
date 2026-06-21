@@ -32,6 +32,9 @@ class NuVoProtocol(asyncio.Protocol) :
 			self.source_data[i]['displines'] = None
 			self.source_data[i]['playlist_repeat'] = None
 			self.source_data[i]['playlist_shuffle'] = None
+			self.source_data[i]['display_lines'] = {}
+			self.source_data[i]['display_status'] = None
+			self.source_data[i]['playback_mode'] = None
 
 		self.favorites = {}
 
@@ -162,6 +165,14 @@ class NuVoProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedMenuActive(m)
 			return
+		m = re.match(r'#S(\d+)DISPLINE(\d+),"(.*)"',line)
+		if m :
+			self.receivedDispLine(m)
+			return
+		m = re.match(r'#S(\d+)DISPINFO,DUR(\d+),POS(\d+),STATUS(\d+)',line)
+		if m :
+			self.receivedDispInfo(m)
+			return
 		m = re.match(r'#S(\d+)FAVORITE(\d+|0x[0-9A-F]+)$',line)
 		if m :
 			self.receivedFavorite(m)
@@ -203,6 +214,31 @@ class NuVoProtocol(asyncio.Protocol) :
 
 	def getNextShuffleStatus(self,source) :
 		return (self.getShuffleStatus(source) + 1) % 3
+
+	def getDisplayLines(self,source) :
+		if source not in self.source_data :
+			return {}
+		return self.source_data[source]['display_lines']
+
+	def getDisplayStatus(self,source) :
+		if source not in self.source_data :
+			return None
+		return self.source_data[source]['display_status']
+
+	def receivedDispLine(self,m) :
+		(source, line_num, text) = m.groups()
+		source = int(source)
+		line_num = int(line_num)
+		if source not in self.source_data :
+			return
+		self.source_data[source]['display_lines'][line_num] = text
+
+	def receivedDispInfo(self,m) :
+		(source, duration, position, status) = m.groups()
+		source = int(source)
+		if source not in self.source_data :
+			return
+		self.source_data[source]['display_status'] = int(status)
 
 	def clearFavorites(self) :
 		self.favorites = {}
@@ -258,6 +294,8 @@ class NuVoProtocol(asyncio.Protocol) :
 		title = ''
 		if 'title' in data :
 			title = data['title']
+
+		self.source_data[source]['playback_mode'] = mode
 
 		any_changed = False
 
