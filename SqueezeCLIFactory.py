@@ -156,7 +156,7 @@ class SqueezeCLIFactory :
 
 	### callbacks from our deferreds to chain requests
 
-	def setPlaylistOffset(self,player,empty,offset) :
+	def setPlaylistOffset(self,result,player,offset) :
 		"Called by a deferred from playAlbum or playPlaylist to start within a list"
 		self.connector.send(player," playlist index +",offset)
 

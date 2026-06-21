@@ -308,6 +308,7 @@ class SqueezeWatchApp :
 
 	def receivedFavoritesChanged(self) :
 		self.nuvo_protocol.clearFavorites()
+		self.favorites = {}
 		d = defer.Deferred()
 		d.addCallback(self.addCacheFavorites)
 		self.getFavorites(d,0,20)

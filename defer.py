@@ -6,10 +6,10 @@ class Deferred:
     def __init__(self):
         self._cbs = []
 
-    def addCallback(self, fn, *extra):
-        self._cbs.append((fn, extra))
+    def addCallback(self, fn, *args, **kwargs):
+        self._cbs.append((fn, args, kwargs))
         return self
 
     def callback(self, result):
-        for fn, extra in self._cbs:
-            result = fn(result, *extra)
+        for fn, args, kwargs in self._cbs:
+            result = fn(result, *args, **kwargs)

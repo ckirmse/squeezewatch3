@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
+import asyncio
 import time
 
-from twisted.internet import defer
-from twisted.internet import reactor
+import defer
 
 from Log import *
 
@@ -280,7 +280,7 @@ class NuVoZone :
 				# prev
 				if action == 1 :
 					self.prev_down = time.time()
-					self.prev_delayed_call = reactor.callLater(self.press_skip_initial_delay,self.holdingPrev)
+					self.prev_delayed_call = asyncio.get_event_loop().call_later(self.press_skip_initial_delay,self.holdingPrev)
 				if action == 2 :
 					if self.prev_delayed_call :
 						self.prev_delayed_call.cancel()
@@ -292,7 +292,7 @@ class NuVoZone :
 				# next
 				if action == 1 :
 					self.next_down = time.time()
-					self.next_delayed_call = reactor.callLater(self.press_skip_initial_delay,self.holdingNext)
+					self.next_delayed_call = asyncio.get_event_loop().call_later(self.press_skip_initial_delay,self.holdingNext)
 				if action == 2 :
 					if self.next_delayed_call :
 						self.next_delayed_call.cancel()
@@ -534,8 +534,8 @@ class NuVoZone :
 				# end with itemindex
 				start = max(0,itemindex-19)
 			d = defer.Deferred()
-			d.addCallback(self.answerArtists)
-			app.getArtists(d,start,20)
+			d.addCallback(self.answerPlaylists)
+			app.getPlaylists(d,start,20)
 			return
 
 		if menuid == self.menuid_playlist_tracks :
@@ -572,30 +572,20 @@ class NuVoZone :
 		self.source = source
 		self.resetIdleTimer()
 
+	def _reset_idle_timer(self, delay) :
+		if self.idle_timer :
+			self.idle_timer.cancel()
+		self.idle_timer = asyncio.get_event_loop().call_later(delay, self.notifyIdleTimer)
+
 	def resetIdleTimer(self) :
 		if self.source in app.nuvo_protocol.getSources() :
-			# it's a source we control--we should auto-time out as normal
-			#dlog("going to a local source for zone",self.zone)
-			if self.idle_timer :
-				#dlog("resetting short timer")
-				self.idle_timer.reset(self.idle_time)
-			else :
-				#dlog("initiating short timer")
-				self.idle_timer = reactor.callLater(self.idle_time,self.notifyIdleTimer)
+			self._reset_idle_timer(self.idle_time)
 		else :
-			# it's some other source; long auto timer
-			#dlog("going to an uncontrolled source for zone",self.zone)
-			if self.idle_timer :
-				#dlog("resetting long timer")
-				self.idle_timer.reset(self.uncontrolled_source_time)
-			else :
-				#dlog("initiating long timer")
-				self.idle_timer = reactor.callLater(self.uncontrolled_source_time,self.notifyIdleTimer)
+			self._reset_idle_timer(self.uncontrolled_source_time)
 
 	def notifyStatusChanged(self) :
 		if self.idle_timer != None :
-			#dlog("zone",self.zone,"status changed")
-			self.idle_timer.reset(self.idle_time)
+			self._reset_idle_timer(self.idle_time)
 
 	def notifyIdleTimer(self) :
 		dlog("idle timeout for zone",self.zone)
@@ -604,9 +594,9 @@ class NuVoZone :
 
 	def holdingPrev(self) :
 		app.rewind(self.source)
-		self.prev_delayed_call = reactor.callLater(self.press_skip_subsequent_delay,self.holdingPrev)
+		self.prev_delayed_call = asyncio.get_event_loop().call_later(self.press_skip_subsequent_delay,self.holdingPrev)
 
 
 	def holdingNext(self) :
 		app.fastForward(self.source)
-		self.next_delayed_call = reactor.callLater(self.press_skip_subsequent_delay,self.holdingNext)
+		self.next_delayed_call = asyncio.get_event_loop().call_later(self.press_skip_subsequent_delay,self.holdingNext)

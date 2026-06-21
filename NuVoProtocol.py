@@ -339,6 +339,14 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.send('*S',source,'Z',zone_num,'MENU0xFFFFFFFF,0,0,0,0,0,0,""')
 
 	def receivedRestart(self) :
+		try :
+			self._receivedRestart()
+		except Exception as e :
+			import traceback
+			elog("Exception in receivedRestart:", e)
+			elog(traceback.format_exc())
+
+	def _receivedRestart(self) :
 		dlog("responding to restart")
 		self.dispinfo = None
 		self.displines = None
@@ -384,7 +392,7 @@ class NuVoProtocol(asyncio.Protocol) :
 	def sendTopLevelMenuItems(self) :
 		for source in self.sources :
 			source_str = str(source)
-			self.send('*S' + source_str + 'MENU,5')
+			self.send('*S' + source_str + 'MENU,4')
 			self.send('*S' + source_str + 'MENUITEM1,1,0,"Artists"')
 			self.send('*S' + source_str + 'MENUITEM2,1,0,"Playlists"')
 			self.send('*S' + source_str + 'MENUITEM3,1,0,"New Music"')
@@ -394,6 +402,10 @@ class NuVoProtocol(asyncio.Protocol) :
 		#print "responding to ping"
 		self.send('*PING')
 		self.sendTopLevelMenuItems()
+		if not self.zones :
+			dlog("no zones known, re-querying zone config")
+			for i in range(1,17) :
+				self.send("*ZCFG",str(i),"STATUS?")
 
 	def receivedZoneConfigStatus(self,m) :
 		(zone_num, name) = m.groups()

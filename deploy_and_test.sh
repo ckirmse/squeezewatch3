@@ -19,12 +19,12 @@ sleep 1
 
 echo ""
 echo "=== Running squeezewatch for ${RUN_SECONDS}s on $REMOTE ==="
-ssh "$REMOTE" "cd $REMOTE_DIR && python3 squeezewatch.py &>/dev/null & echo \$!; sleep $RUN_SECONDS; pkill -f squeezewatch.py 2>/dev/null || true"
+ssh "$REMOTE" "cd $REMOTE_DIR && python3 squeezewatch.py >/dev/null 2>stderr.txt & echo \$!; sleep $RUN_SECONDS; pkill -f squeezewatch.py 2>/dev/null || true"
 
 echo ""
 echo "=== Copying logs from $REMOTE ==="
 mkdir -p "$LOG_DIR"
-rsync -av "$REMOTE:$REMOTE_DIR/log.txt" "$REMOTE:$REMOTE_DIR/error.txt" "$REMOTE:$REMOTE_DIR/debug.txt" "$LOG_DIR/" 2>/dev/null || true
+rsync -av "$REMOTE:$REMOTE_DIR/log.txt" "$REMOTE:$REMOTE_DIR/error.txt" "$REMOTE:$REMOTE_DIR/debug.txt" "$REMOTE:$REMOTE_DIR/stderr.txt" "$LOG_DIR/" 2>/dev/null || true
 
 echo ""
 echo "=== Logs saved to $LOG_DIR ==="
@@ -37,3 +37,6 @@ cat "$LOG_DIR/error.txt" 2>/dev/null || echo "(empty)"
 echo ""
 echo "--- debug.txt (last 50 lines) ---"
 tail -50 "$LOG_DIR/debug.txt" 2>/dev/null || echo "(empty)"
+echo ""
+echo "--- stderr.txt ---"
+cat "$LOG_DIR/stderr.txt" 2>/dev/null || echo "(empty)"
