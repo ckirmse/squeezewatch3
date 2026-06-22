@@ -414,6 +414,10 @@ class NuVoProtocol(asyncio.Protocol) :
 		for source in self.sources :
 			app.getStatus(source)
 
+		# set zone names, if you want to rename something
+		#self.send('*ZCFG6NAME"Main Bedroom"')
+		#self.send('*ZCFG11NAME"Main Bathroom"')
+
 		# find out what zones are enabled
 		for i in range(1,17) :
 			self.send("*ZCFG",str(i),"STATUS?")
