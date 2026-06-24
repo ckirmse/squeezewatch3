@@ -79,13 +79,13 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedStatus(m)
 			return
-		m = re.match(r'\S+ pause',line)
+		m = re.match(r'(\S+) pause',line)
 		if m :
-			# ignore, it just mean we paused/unpaused
+			self.receivedPauseOrPower(m)
 			return
-		m = re.match(r'\S+ power',line)
+		m = re.match(r'(\S+) power',line)
 		if m :
-			# ignore, it just mean we turned on/off
+			self.receivedPauseOrPower(m)
 			return
 		m = re.match(r'(\S+) playlist repeat\s+(\d+)\s+(.*)',line)
 		if m :
@@ -452,6 +452,12 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		player = unquote(player)
 		#print "playlist: ",rest
 		self.send(player," status - 1")
+
+	def receivedPauseOrPower(self,m) :
+		# play state just changed; poll now instead of waiting for the next subscribe:5 tick
+		(player,) = m.groups()
+		player = unquote(player)
+		self.send(player," status - 1 tags:galdu")
 
 	def receivedPlaylistControl(self,m) :
 		(rest,) = m.groups()
