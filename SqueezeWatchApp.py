@@ -252,6 +252,15 @@ class SqueezeWatchApp :
 		if is_stream and url and mode != 'play' :
 			self.factory.playUrl(self.source_player_map[source], url)
 
+	def playPauseOrStream(self,source) :
+		info = self.nuvo_protocol.getSourceStreamInfo(source)
+		if info is not None :
+			(is_stream, url, mode) = info
+			if is_stream and url and mode != 'play' :
+				self.factory.playUrl(self.source_player_map[source], url)
+				return
+		self.playPause(source)
+
 	def receivedPlayers(self,players) :
 		self.players = players
 		for player in players :

@@ -294,7 +294,7 @@ class NuVoZone :
 				# play/pause
 				if action == 2 :
 					# button up
-					app.playPause(self.source)
+					app.playPauseOrStream(self.source)
 				return
 			elif button == 3 :
 				# prev
