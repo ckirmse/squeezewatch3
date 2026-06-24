@@ -43,7 +43,7 @@ class NuVoProtocol(asyncio.Protocol) :
 	def connection_made(self, transport) :
 		self.transport = transport
 		self._write_queue = asyncio.Queue()
-		self._drain_task = asyncio.get_event_loop().create_task(self._drain_write_queue())
+		self._drain_task = asyncio.get_event_loop().create_task(self._drainWriteQueue())
 		dlog("connection made to NuVo")
 		self.send('*RESTART')
 		asyncio.get_event_loop().call_later(3, self.notifyTimer)
@@ -55,7 +55,7 @@ class NuVoProtocol(asyncio.Protocol) :
 			self._drain_task = None
 		self.transport = None
 
-	async def _drain_write_queue(self) :
+	async def _drainWriteQueue(self) :
 		while True :
 			data = await self._write_queue.get()
 			if self.transport :
@@ -68,7 +68,7 @@ class NuVoProtocol(asyncio.Protocol) :
 			line, self._buf = self._buf.split(b'\r', 1)
 			line = line.strip(b'\n')
 			if line :
-				self.line_received(line)
+				self.lineReceived(line)
 
 	def start(self) :
 		self.enabled = True
@@ -117,7 +117,7 @@ class NuVoProtocol(asyncio.Protocol) :
 
 		asyncio.get_event_loop().call_later(60-(now.second + now.microsecond/1000000),self.notifyTimer)
 
-	def line_received(self,line) :
+	def lineReceived(self,line) :
 		#dlog(line)
 		line = str(line, "latin1")
 		if line == '#PING' :

@@ -30,7 +30,7 @@ async def connect_lms(factory) :
 			log("Connecting to LMS...")
 			proto = SqueezeCLIProtocol(factory)
 			await loop.create_connection(lambda: proto, 'mario', 9090)
-			await proto.wait_disconnected()
+			await proto.waitDisconnected()
 			log("LMS connection lost, will reconnect")
 		except OSError as e :
 			log("LMS connect failed:", e)

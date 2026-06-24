@@ -23,4 +23,4 @@ def renderTemplate(request,page,parameters,path_parameters) :
 		dlog("template not found:",page)
 		return None
 
-	return template.render(**logic.get_context()).encode('utf-8')
+	return template.render(**logic.getContext()).encode('utf-8')

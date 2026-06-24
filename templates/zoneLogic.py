@@ -6,7 +6,7 @@ from SqueezeWatchApp import app
 
 class zoneLogic(RequestLogic) :
 
-	def get_context(self) :
+	def getContext(self) :
 		if not self.path_parameters :
 			return {}
 		zone_id = int(self.path_parameters[0])

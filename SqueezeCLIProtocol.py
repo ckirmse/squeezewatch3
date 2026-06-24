@@ -20,7 +20,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		self.context_map = {}
 		self.next_context = 1
 
-	async def wait_disconnected(self) :
+	async def waitDisconnected(self) :
 		await self._disconnected.wait()
 
 	def connection_made(self, transport) :
@@ -45,9 +45,9 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			line, self._buf = self._buf.split(b'\n', 1)
 			line = line.rstrip(b'\r')
 			if line :
-				self.line_received(line)
+				self.lineReceived(line)
 
-	def line_received(self, line) :
+	def lineReceived(self, line) :
 		#dlog("cli result",line)
 		line = str(line, "utf-8")
 

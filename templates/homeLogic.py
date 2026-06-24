@@ -8,7 +8,7 @@ from SqueezeWatchApp import app
 
 class homeLogic(RequestLogic) :
 
-	def get_context(self) :
+	def getContext(self) :
 		zones = app.nuvo_protocol.getZones()
 		return {
 			'zones' : [

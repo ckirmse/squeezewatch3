@@ -124,17 +124,17 @@ class NuVoZone :
 		if self.state == self.StateMain :
 			pass
 		elif self.state == self.StateArtists :
-			asyncio.get_event_loop().create_task(self._fetch_artists(0,first_in_state=True))
+			asyncio.get_event_loop().create_task(self._fetchArtists(0,first_in_state=True))
 		elif self.state == self.StateArtistAlbums :
-			asyncio.get_event_loop().create_task(self._fetch_artist_albums(0))
+			asyncio.get_event_loop().create_task(self._fetchArtistAlbums(0))
 		elif self.state == self.StateArtistAlbumTracks :
-			asyncio.get_event_loop().create_task(self._fetch_album_tracks(0))
+			asyncio.get_event_loop().create_task(self._fetchAlbumTracks(0))
 		elif self.state == self.StatePlaylists :
-			asyncio.get_event_loop().create_task(self._fetch_playlists(0))
+			asyncio.get_event_loop().create_task(self._fetchPlaylists(0))
 		elif self.state == self.StatePlaylistTracks :
-			asyncio.get_event_loop().create_task(self._fetch_playlist_tracks(0))
+			asyncio.get_event_loop().create_task(self._fetchPlaylistTracks(0))
 		elif self.state == self.StateNewestAlbums :
-			asyncio.get_event_loop().create_task(self._fetch_newest_albums())
+			asyncio.get_event_loop().create_task(self._fetchNewestAlbums())
 		elif self.state == self.StateSettings :
 			self.sendSettingsMenu()
 
@@ -244,37 +244,37 @@ class NuVoZone :
 		self.nuvo.sendMenuItem(self.source,self.zone,1,2,repeat_str)
 		self.nuvo.sendMenuItem(self.source,self.zone,2,2,shuffle_str)
 
-	async def _fetch_artists(self,start,first_in_state=False) :
+	async def _fetchArtists(self,start,first_in_state=False) :
 		result = await app.getArtists(start,20)
 		if result :
 			self.answerArtists(result,first_in_state=first_in_state)
 
-	async def _fetch_artist_albums(self,start) :
+	async def _fetchArtistAlbums(self,start) :
 		result = await app.getArtistAlbums(self.menu_artistid,start,20)
 		if result :
 			self.answerArtistAlbums(result)
 
-	async def _fetch_album_tracks(self,start) :
+	async def _fetchAlbumTracks(self,start) :
 		result = await app.getAlbumTracks(self.menu_artist_albumid,start,20)
 		if result :
 			self.answerAlbumTracks(result)
 
-	async def _fetch_playlists(self,start) :
+	async def _fetchPlaylists(self,start) :
 		result = await app.getPlaylists(start,20)
 		if result :
 			self.answerPlaylists(result)
 
-	async def _fetch_playlist_tracks(self,start) :
+	async def _fetchPlaylistTracks(self,start) :
 		result = await app.getPlaylistTracks(self.menu_playlistid,start,20)
 		if result :
 			self.answerPlaylistTracks(result)
 
-	async def _fetch_newest_albums(self) :
+	async def _fetchNewestAlbums(self) :
 		result = await app.getNewestAlbums()
 		if result :
 			self.answerNewestAlbums(result)
 
-	async def _change_setting(self,itemindex) :
+	async def _changeSetting(self,itemindex) :
 		if itemindex == 0 :
 			await app.setRepeat(self.source,self.nuvo.getNextRepeatStatus(self.source))
 		elif itemindex == 1 :
@@ -436,7 +436,7 @@ class NuVoZone :
 		if menuid == self.menuid_settings :
 			if button == 1 :
 				# OK
-				asyncio.get_event_loop().create_task(self._change_setting(itemindex))
+				asyncio.get_event_loop().create_task(self._changeSetting(itemindex))
 			elif button == 2 :
 				pass
 			return
@@ -488,7 +488,7 @@ class NuVoZone :
 				start = itemindex
 			elif location == 3 :
 				start = max(0,itemindex-19)
-			asyncio.get_event_loop().create_task(self._fetch_artists(start))
+			asyncio.get_event_loop().create_task(self._fetchArtists(start))
 			return
 
 		elif menuid == self.menuid_artist_albums :
@@ -500,7 +500,7 @@ class NuVoZone :
 				start = itemindex
 			elif location == 3 :
 				start = max(0,itemindex-19)
-			asyncio.get_event_loop().create_task(self._fetch_artist_albums(start))
+			asyncio.get_event_loop().create_task(self._fetchArtistAlbums(start))
 			return
 
 		elif menuid == self.menuid_artist_album_tracks :
@@ -512,7 +512,7 @@ class NuVoZone :
 				start = itemindex
 			elif location == 3 :
 				start = max(0,itemindex-19)
-			asyncio.get_event_loop().create_task(self._fetch_album_tracks(start))
+			asyncio.get_event_loop().create_task(self._fetchAlbumTracks(start))
 			return
 
 		if menuid == self.menuid_playlists :
@@ -524,7 +524,7 @@ class NuVoZone :
 				start = itemindex
 			elif location == 3 :
 				start = max(0,itemindex-19)
-			asyncio.get_event_loop().create_task(self._fetch_playlists(start))
+			asyncio.get_event_loop().create_task(self._fetchPlaylists(start))
 			return
 
 		if menuid == self.menuid_playlist_tracks :
@@ -536,7 +536,7 @@ class NuVoZone :
 				start = itemindex
 			elif location == 3 :
 				start = max(0,itemindex-19)
-			asyncio.get_event_loop().create_task(self._fetch_playlist_tracks(start))
+			asyncio.get_event_loop().create_task(self._fetchPlaylistTracks(start))
 			return
 
 		elog('unknown menu',menuid)
@@ -555,20 +555,20 @@ class NuVoZone :
 		self.source = source
 		self.resetIdleTimer()
 
-	def _reset_idle_timer(self, delay) :
+	def _resetIdleTimer(self, delay) :
 		if self.idle_timer :
 			self.idle_timer.cancel()
 		self.idle_timer = asyncio.get_event_loop().call_later(delay, self.notifyIdleTimer)
 
 	def resetIdleTimer(self) :
 		if self.source in app.nuvo_protocol.getSources() :
-			self._reset_idle_timer(self.idle_time)
+			self._resetIdleTimer(self.idle_time)
 		else :
-			self._reset_idle_timer(self.uncontrolled_source_time)
+			self._resetIdleTimer(self.uncontrolled_source_time)
 
 	def notifyStatusChanged(self) :
 		if self.idle_timer != None :
-			self._reset_idle_timer(self.idle_time)
+			self._resetIdleTimer(self.idle_time)
 
 	def notifyIdleTimer(self) :
 		dlog("idle timeout for zone",self.zone)

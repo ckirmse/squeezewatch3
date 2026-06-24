@@ -10,5 +10,5 @@ class RequestLogic :
 		self.parameters = parameters
 		self.path_parameters = path_parameters
 
-	def get_context(self) :
+	def getContext(self) :
 		return {}
