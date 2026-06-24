@@ -115,6 +115,10 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedRescan(m)
 			return
+		m = re.match(r'\S+\s+client\s+.*',line)
+		if m :
+			self.receivedClient(m)
+			return
 		dlog("unknown line:",line)
 
 
@@ -508,6 +512,9 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 
 	def receivedFavoritesChanged(self,m) :
 		app.receivedFavoritesChanged()
+
+	def receivedClient(self,m) :
+		self.send("players 0 5")
 
 	def receivedRescan(self,m) :
 		(rescan_state,) = m.groups()
