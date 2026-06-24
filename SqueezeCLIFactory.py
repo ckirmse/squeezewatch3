@@ -103,6 +103,11 @@ class SqueezeCLIFactory :
 		await future
 		self.connector.send(player," playlist index +",offset)
 
+	def playUrl(self,player,url) :
+		if not self.connector :
+			return
+		self.connector.send(player," playlist play ",url)
+
 	def playFavorite(self,player,favoriteid) :
 		if not self.connector :
 			return

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import asyncio
-import sys
 
 from Log import *
 
@@ -243,25 +242,25 @@ class SqueezeWatchApp :
 		album_data, = tuple_var
 		self.newest_albums = album_data
 
+	def playStreamIfNeeded(self,source) :
+		if source not in self.source_player_map :
+			return
+		info = self.nuvo_protocol.getSourceStreamInfo(source)
+		if info is None :
+			return
+		(is_stream, url, mode) = info
+		if is_stream and url and mode != 'play' :
+			self.factory.playUrl(self.source_player_map[source], url)
+
 	def receivedPlayers(self,players) :
 		self.players = players
-		sources = self.nuvo_protocol.getSources()
-		if len(self.players) != len(sources) :
-			dlog("got unexpected number of players",len(self.players),"with sources", len(sources))
-			dlog(self.players, sources)
-			if len(sources) > len(self.players) :
-				self.players = self.players[:len(sources)]
+		for player in players :
+			if player in self.player_source_map :
+				source = self.player_source_map[player]
+				dlog("source",source,"mapped to player",player)
+				self.source_player_map[source] = player
 			else :
-				dlog("fatal more players than sources")
-				sys.exit()
-		# this is fragile... need to have a static mapping of
-		# source 3 -> player 00:00:00:01
-		# source 5 -> player whatever
-		sources_reverse = list(sources)
-		sources_reverse.reverse()
-		for (player,source) in zip(self.players,sources_reverse) :
-			dlog("source",source,"mapped to player",player)
-			self.source_player_map[source] = player
+				dlog("unknown player, no source mapping:",player)
 
 		self.nuvo_protocol.start()
 

@@ -35,6 +35,9 @@ class NuVoProtocol(asyncio.Protocol) :
 			self.source_data[i]['display_lines'] = {}
 			self.source_data[i]['display_status'] = None
 			self.source_data[i]['playback_mode'] = None
+			self.source_data[i]['last_url'] = ''
+			self.source_data[i]['is_stream'] = False
+			self.source_data[i]['last_mode'] = ''
 
 		self.favorites = {}
 
@@ -203,6 +206,12 @@ class NuVoProtocol(asyncio.Protocol) :
 			return
 		dlog("unhandled:",line)
 
+	def getSourceStreamInfo(self,source) :
+		if source not in self.source_data :
+			return None
+		d = self.source_data[source]
+		return (d['is_stream'], d['last_url'], d['last_mode'])
+
 	def getRepeatStatus(self,source) :
 		return self.source_data[source]['playlist_repeat']
 
@@ -247,6 +256,11 @@ class NuVoProtocol(asyncio.Protocol) :
 		# perhaps should look at data['showBriefly']
 		self.source_data[source]['playlist_repeat'] = int(data['playlist repeat'])
 		self.source_data[source]['playlist_shuffle'] = int(data['playlist shuffle'])
+
+		self.source_data[source]['last_url'] = data.get('url', '')
+		raw_duration = float(data['duration']) if 'duration' in data else -1.0
+		self.source_data[source]['is_stream'] = (raw_duration == 0.0)
+		self.source_data[source]['last_mode'] = data.get('mode', '')
 
 		duration = 0
 		if 'duration' in data :
@@ -572,7 +586,10 @@ class NuVoProtocol(asyncio.Protocol) :
 			dlog("zone on for unknown zone",zone_num)
 			return
 		zone = self.zones[zone_num]
+		is_first_zone = not self.isAnyZoneOnThisSource(source)
 		zone.receivedOnSource(source)
+		if is_first_zone and source in self.sources :
+			app.playStreamIfNeeded(source)
 		# auto-pause if no one listening
 		if not self.isAnyZoneOnThisSource(source) :
 			app.pause(source)
