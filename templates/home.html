@@ -9,14 +9,59 @@
 {% for zone in zones %}
 <div>
   <a href="/zone/{{ zone.id }}">Zone {{ zone.id }} ({{ zone.name }})</a> &mdash;
-  {% if zone.is_on %}
-    Source {{ zone.source }}
-    <a href="?action=zone_off&amp;zone={{ zone.id }}">Turn Off</a>
-  {% else %}
-    <a href="?action=zone_on&amp;zone={{ zone.id }}">Turn On</a>
-  {% endif %}
+  <span id="source-{{ zone.id }}">{% if zone.is_on %}Source {{ zone.source }}{% endif %}</span>
+  <button id="onoff-{{ zone.id }}" onclick="doOnOff({{ zone.id }})">{{ 'Turn Off' if zone.is_on else 'Turn On' }}</button>
 </div>
 {% endfor %}
-<p><a href="?action=all_off">All Off</a></p>
+<p><button onclick="doAllOff()">All Off</button></p>
+
+<script>
+var zoneState = {
+  {% for zone in zones %}
+  {{ zone.id }}: {{ 'true' if zone.is_on else 'false' }},
+  {% endfor %}
+};
+var zoneIds = [{% for zone in zones %}{{ zone.id }},{% endfor %}];
+
+function doOnOff(zoneId) {
+  if (zoneState[zoneId]) {
+    fetch('/api/zone/' + zoneId + '/action?action=zone_off');
+    zoneState[zoneId] = false;
+    document.getElementById('onoff-' + zoneId).textContent = 'Turn On';
+    document.getElementById('source-' + zoneId).textContent = '';
+  } else {
+    fetch('/api/zone/' + zoneId + '/action?action=zone_on');
+    zoneState[zoneId] = true;
+    document.getElementById('onoff-' + zoneId).textContent = 'Turn Off';
+  }
+}
+
+function doAllOff() {
+  fetch('/?action=all_off');
+  zoneIds.forEach(function(zoneId) {
+    zoneState[zoneId] = false;
+    document.getElementById('onoff-' + zoneId).textContent = 'Turn On';
+    document.getElementById('source-' + zoneId).textContent = '';
+  });
+}
+
+function updateZoneStatus(data) {
+  var zoneId = data.zone_id;
+  zoneState[zoneId] = data.is_on;
+  document.getElementById('onoff-' + zoneId).textContent = data.is_on ? 'Turn Off' : 'Turn On';
+  document.getElementById('source-' + zoneId).textContent = data.is_on ? ('Source ' + data.source) : '';
+}
+
+function poll() {
+  zoneIds.forEach(function(zoneId) {
+    fetch('/api/zone/' + zoneId + '/status')
+      .then(function(response) { return response.json(); })
+      .then(updateZoneStatus);
+  });
+}
+
+poll();
+setInterval(poll, 2000);
+</script>
 </body>
 </html>
