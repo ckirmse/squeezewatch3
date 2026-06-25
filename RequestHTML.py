@@ -54,7 +54,7 @@ async def zone_favorites(zone_id: int) :
 		return JSONResponse({"favorites": []})
 	favorites_data, = result
 	return JSONResponse({
-		"favorites": [{"id": favorite_id, "name": name} for favorite_id, name in favorites_data]
+		"favorites": [{"id": favorite_id, "name": name} for favorite_id, name, url in favorites_data]
 	})
 
 @http_app.get("/api/zone/{zone_id}/action")

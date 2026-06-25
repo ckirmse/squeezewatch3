@@ -65,7 +65,7 @@ class SqueezeCLIFactory :
 			return None
 		future = asyncio.get_event_loop().create_future()
 		context = self.connector.addContext(future)
-		self.connector.send("favorites items ",offset," ",limit," context:",context)
+		self.connector.send("favorites items ",offset," ",limit," want_url:1 context:",context)
 		return await future
 
 	def playArtist(self,player,artistid) :

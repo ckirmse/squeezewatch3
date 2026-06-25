@@ -359,7 +359,7 @@ class NuVoProtocol(asyncio.Protocol) :
 				sources.append(str(0))
 		self.send('*S',str(self.sources[0]),'FAVORITES',len(favorites_data),',',','.join(sources))
 		index = 0
-		for (id,name) in favorites_data :
+		for (id,name,url) in favorites_data :
 			index += 1
 			self.favorites[index] = id
 			self.send('*S',str(self.sources[0]),'FAVORITESITEM',index,',0,0,"',nuvoEscape(name),'"')

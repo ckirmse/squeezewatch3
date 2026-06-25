@@ -487,6 +487,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		kvps = rest.split()
 		ids = []
 		names = []
+		urls = []
 		for i in kvps :
 			#(key,colon,value) = i.partition(':')
 			m2 = re.match(r'(\S+?)%3A(.*)',i)
@@ -503,6 +504,8 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 				ids.append(value)
 			elif key == "name" :
 				names.append(value)
+			elif key == "url" :
+				urls.append(value)
 			elif key == "title" or key == "type" or key == "isaudio" or key == "hasitems" :
 				pass
 			elif key == "context" :
@@ -512,7 +515,9 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			else :
 				elog("unexpected key",key)
 
-		favorites_data = list(zip(ids,names))
+		if len(urls) < len(ids) :
+			urls += [''] * (len(ids) - len(urls))
+		favorites_data = list(zip(ids,names,urls))
 		#dlog("got favorites for",offset,limit,favorites_data)
 		self.dispatchResult(context,favorites_data)
 

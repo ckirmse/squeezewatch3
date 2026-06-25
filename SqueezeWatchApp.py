@@ -164,13 +164,34 @@ class SqueezeWatchApp :
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
+		if self._playAdjacentFavorite(source, -1) :
+			return
 		self.factory.prevTrack(self.source_player_map[source])
 
 	def nextTrack(self,source) :
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
+		if self._playAdjacentFavorite(source, 1) :
+			return
 		self.factory.nextTrack(self.source_player_map[source])
+
+	def _playAdjacentFavorite(self,source,direction) :
+		info = self.nuvo_protocol.getSourceStreamInfo(source)
+		if info is None :
+			return False
+		(is_stream, url, mode) = info
+		if not is_stream or not url or not self.favorites :
+			return False
+		favorites_list, = self.favorites
+		urls = [fav_url for (_, _, fav_url) in favorites_list]
+		if url not in urls :
+			return False
+		index = urls.index(url)
+		new_index = (index + direction) % len(favorites_list)
+		favorite_id = favorites_list[new_index][0]
+		self.factory.playFavorite(self.source_player_map[source], favorite_id)
+		return True
 
 	def rewind(self,source) :
 		if not source in self.source_player_map :
