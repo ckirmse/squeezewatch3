@@ -30,6 +30,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		self.factory.notifyConnectionMade(self)
 
 		self.send("subscribe playlist,favorites,client,rescan")
+		self.send("pref httpport ?")
 
 		# get info on the players out there - should parse "client" messages to know when changed
 		self.send("players 0 5")
@@ -111,6 +112,11 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedFavoritesChanged(m)
 			return
+		m = re.match(r'pref httpport (\d+)',line)
+		if m :
+			port = m.group(1)
+			app.lms_http_base_url = 'http://' + app.lms_host + ':' + port
+			return
 		m = re.match(r'rescan\s+(.*)',line)
 		if m :
 			self.receivedRescan(m)
@@ -171,7 +177,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			control_players.append(player["playerid"])
 
 		for player in control_players :
-			self.send(player," status - 1 tags:galdu subscribe:5")
+			self.send(player," status - 1 tags:galduKc subscribe:5")
 
 		app.receivedPlayers(control_players)
 
@@ -451,13 +457,13 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 		(player,rest) = m.groups()
 		player = unquote(player)
 		#print "playlist: ",rest
-		self.send(player," status - 1")
+		self.send(player," status - 1 tags:galduKc")
 
 	def receivedPauseOrPower(self,m) :
 		# play state just changed; poll now instead of waiting for the next subscribe:5 tick
 		(player,) = m.groups()
 		player = unquote(player)
-		self.send(player," status - 1 tags:galdu")
+		self.send(player," status - 1 tags:galduKc")
 
 	def receivedPlaylistControl(self,m) :
 		(rest,) = m.groups()
@@ -506,7 +512,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 				names.append(value)
 			elif key == "url" :
 				urls.append(value)
-			elif key == "title" or key == "type" or key == "isaudio" or key == "hasitems" :
+			elif key == "title" or key == "type" or key == "isaudio" or key == "hasitems" or key == "want_url" :
 				pass
 			elif key == "context" :
 				context = value

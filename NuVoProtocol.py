@@ -38,6 +38,8 @@ class NuVoProtocol(asyncio.Protocol) :
 			self.source_data[i]['last_url'] = ''
 			self.source_data[i]['is_stream'] = False
 			self.source_data[i]['last_mode'] = ''
+			self.source_data[i]['artwork_url'] = ''
+			self.source_data[i]['coverid'] = ''
 
 		self.favorites = {}
 
@@ -204,6 +206,10 @@ class NuVoProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedSourceConfigStatus(m)
 			return
+		m = re.match(r'#VER"(.*)"',line)
+		if m :
+			log("NuVo version:", m.group(1))
+			return
 		dlog("unhandled:",line)
 
 	def getSourceStreamInfo(self,source) :
@@ -308,6 +314,9 @@ class NuVoProtocol(asyncio.Protocol) :
 		title = ''
 		if 'title' in data :
 			title = data['title']
+
+		self.source_data[source]['artwork_url'] = data.get('artwork_url', '')
+		self.source_data[source]['coverid'] = data.get('coverid', '')
 
 		self.source_data[source]['playback_mode'] = mode
 

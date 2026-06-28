@@ -7,7 +7,8 @@ from Log import *
 class SqueezeWatchApp :
 
 	def __init__(self) :
-		pass
+		self.lms_host = ''
+		self.lms_http_base_url = ''
 
 	def resetAll(self) :
 		self.players = []

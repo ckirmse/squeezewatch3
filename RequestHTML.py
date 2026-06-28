@@ -3,7 +3,7 @@
 import re
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from Log import *
 
@@ -38,6 +38,19 @@ async def zone_status(zone_id: int) :
 		elif status is not None :
 			mode = "play"
 
+	artwork_url = ''
+	if source != 0 :
+		lms_artwork_url = squeeze_app.nuvo_protocol.source_data[source].get('artwork_url', '')
+		if lms_artwork_url :
+			if lms_artwork_url.startswith('/') :
+				artwork_url = squeeze_app.lms_http_base_url + lms_artwork_url
+			else :
+				artwork_url = lms_artwork_url
+		else :
+			coverid = squeeze_app.nuvo_protocol.source_data[source].get('coverid', '')
+			if coverid :
+				artwork_url = '/api/artwork/' + coverid
+
 	return JSONResponse({
 		"zone_id": zone_id,
 		"zone_name": zone.name,
@@ -45,6 +58,7 @@ async def zone_status(zone_id: int) :
 		"source": source,
 		"lines": lines,
 		"mode": mode,
+		"artwork_url": artwork_url,
 	})
 
 @http_app.get("/api/zone/{zone_id}/favorites")
@@ -81,6 +95,11 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "") :
 		squeeze_app.playFavorite(source, favorite_id)
 
 	return JSONResponse({"ok": True})
+
+@http_app.get("/api/artwork/{coverid}")
+async def artwork_proxy(coverid: str) :
+	url = squeeze_app.lms_http_base_url + '/music/' + coverid + '/cover.jpg'
+	return RedirectResponse(url)
 
 @http_app.get("/{path:path}")
 async def handle(request: Request, path: str) :

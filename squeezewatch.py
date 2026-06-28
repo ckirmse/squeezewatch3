@@ -44,6 +44,8 @@ async def main() :
 	if cmd_folder not in sys.path :
 		sys.path.insert(0, cmd_folder)
 
+	app.lms_host = 'mario'
+
 	app.player_source_map = {
 		'00:27:0e:05:73:68': 3,
 		'00:22:6c:36:3d:26': 5,

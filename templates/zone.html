@@ -16,6 +16,10 @@
 </div>
 
 <div style="margin-top:10px;">
+  <img id="artwork" src="" alt="" style="display:none; max-width:200px; max-height:200px;">
+</div>
+
+<div style="margin-top:10px;">
   <button onclick="doAction('prev_track')">&lt;&lt; Prev</button>
   <button id="playpause" onclick="doAction('play_pause')">Play/Pause</button>
   <button onclick="doAction('next_track')">Next &gt;&gt;</button>
@@ -60,6 +64,15 @@ function updateDisplay(data) {
   zoneIsOn = data.is_on;
   document.getElementById('onoff').textContent = data.is_on ? 'Turn Off' : 'Turn On';
   document.getElementById('zonestatus').textContent = data.is_on ? ('Source ' + data.source) : 'Off';
+
+  var img = document.getElementById('artwork');
+  if (data.artwork_url) {
+    img.src = data.artwork_url;
+    img.style.display = '';
+  } else {
+    img.src = '';
+    img.style.display = 'none';
+  }
 }
 
 function poll() {
