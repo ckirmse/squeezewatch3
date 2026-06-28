@@ -27,6 +27,8 @@
 
 <p id="zonestatus"></p>
 
+<div style="margin-top:10px;" id="source-buttons"></div>
+
 <div style="margin-top:10px;">
   <button onclick="toggleFavorites()">Favorites</button>
 </div>
@@ -35,6 +37,7 @@
 <script>
 var zoneId = {{ zone_id }};
 var zoneIsOn = false;
+var currentSource = 0;
 
 function doAction(action) {
   fetch('/api/zone/' + zoneId + '/action?action=' + action);
@@ -52,16 +55,21 @@ function doOnOff() {
   }
 }
 
+function setSource(sourceId) {
+  fetch('/api/zone/' + zoneId + '/action?action=set_source&source_id=' + sourceId);
+}
+
 function updateDisplay(data) {
-  document.getElementById('line1').textContent = data.lines[0] || ' ';
-  document.getElementById('line2').textContent = data.lines[1] || ' ';
-  document.getElementById('line3').textContent = data.lines[2] || ' ';
-  document.getElementById('line4').textContent = data.lines[3] || ' ';
+  document.getElementById('line1').textContent = data.lines[0] || ' ';
+  document.getElementById('line2').textContent = data.lines[1] || ' ';
+  document.getElementById('line3').textContent = data.lines[2] || ' ';
+  document.getElementById('line4').textContent = data.lines[3] || ' ';
 
   var button = document.getElementById('playpause');
   button.textContent = data.mode === 'play' ? 'Pause' : 'Play';
 
   zoneIsOn = data.is_on;
+  currentSource = data.source;
   document.getElementById('onoff').textContent = data.is_on ? 'Turn Off' : 'Turn On';
   document.getElementById('zonestatus').textContent = data.is_on ? ('Source ' + data.source) : 'Off';
 
@@ -73,6 +81,21 @@ function updateDisplay(data) {
     img.src = '';
     img.style.display = 'none';
   }
+
+  updateSourceButtons();
+}
+
+function updateSourceButtons() {
+  var buttons = document.getElementById('source-buttons').querySelectorAll('button');
+  for (var i = 0; i < buttons.length; i++) {
+    var button = buttons[i];
+    var sourceId = parseInt(button.dataset.sourceId);
+    if (zoneIsOn && sourceId === currentSource) {
+      button.style.fontWeight = 'bold';
+    } else {
+      button.style.fontWeight = '';
+    }
+  }
 }
 
 function poll() {
@@ -83,6 +106,20 @@ function poll() {
 
 poll();
 setInterval(poll, 1000);
+
+fetch('/api/sources')
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    var container = document.getElementById('source-buttons');
+    data.sources.forEach(function(source) {
+      var button = document.createElement('button');
+      button.textContent = source.name;
+      button.dataset.sourceId = source.id;
+      button.onclick = function() { setSource(source.id); };
+      container.appendChild(button);
+    });
+    updateSourceButtons();
+  });
 
 var favoritesLoaded = false;
 

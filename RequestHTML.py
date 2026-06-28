@@ -72,7 +72,7 @@ async def zone_favorites(zone_id: int) :
 	})
 
 @http_app.get("/api/zone/{zone_id}/action")
-async def zone_action(zone_id: int, action: str = "", favorite_id: str = "") :
+async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", source_id: int = 0) :
 	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
 		return JSONResponse(status_code=404, content={"error": "zone not found"})
 
@@ -83,6 +83,9 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "") :
 		squeeze_app.nuvo_protocol.sendZoneOn(zone_id)
 	elif action == "zone_off" :
 		squeeze_app.nuvo_protocol.sendZoneOff(zone_id)
+	elif action == "set_source" :
+		if source_id :
+			squeeze_app.nuvo_protocol.sendZoneSource(zone_id, source_id)
 	elif source == 0 :
 		return JSONResponse({"ok": False, "error": "zone is off"})
 	elif action == "play_pause" :
@@ -95,6 +98,14 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "") :
 		squeeze_app.playFavorite(source, favorite_id)
 
 	return JSONResponse({"ok": True})
+
+@http_app.get("/api/sources")
+async def sources() :
+	source_names = squeeze_app.nuvo_protocol.getSourceNames()
+	result = []
+	for source_id in sorted(source_names.keys()) :
+		result.append({"id": source_id, "name": source_names[source_id]})
+	return JSONResponse({"sources": result})
 
 @http_app.get("/api/artwork/{coverid}")
 async def artwork_proxy(coverid: str) :

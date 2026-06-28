@@ -24,6 +24,8 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.sources = sources;
 		self.source_strs = [str(x) for x in self.sources];
 
+		self.source_names = {}
+
 		self.source_data = {}
 		for i in self.sources :
 			# per-source data
@@ -382,6 +384,12 @@ class NuVoProtocol(asyncio.Protocol) :
 	def sendZoneOff(self,zone_num) :
 		self.send('*Z',zone_num,'OFF')
 
+	def sendZoneSource(self,zone_num,source) :
+		self.send('*Z',zone_num,'SRC',source)
+
+	def getSourceNames(self) :
+		return self.source_names
+
 	def sendAllOff(self) :
 		self.send('*ALLOFF')
 
@@ -483,6 +491,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		source = int(source)
 		gain = int(gain)
 		is_nuvonet = int(is_nuvonet)
+		self.source_names[source] = name
 		desired_gain = 0
 		if is_nuvonet :
 			desired_gain = DESIRED_GAIN
