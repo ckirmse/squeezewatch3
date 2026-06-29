@@ -177,7 +177,8 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			control_players.append(player["playerid"])
 
 		for player in control_players :
-			self.send(player," status - 1 tags:galduKc subscribe:5")
+			if player in app.player_source_map :
+				self.send(player," status - 1 tags:galduKc subscribe:5")
 
 		app.receivedPlayers(control_players)
 

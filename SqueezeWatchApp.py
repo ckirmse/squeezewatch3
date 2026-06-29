@@ -305,18 +305,24 @@ class SqueezeWatchApp :
 		if not player in self.players :
 			return
 		source = self.getSourceForPlayer(player)
+		if source is None :
+			return
 		self.nuvo_protocol.answerStatus(source,data)
 
 	def receivedRepeatStatus(self,player,repeat_status) :
 		if player != self.players[0] :
 			return
 		source = self.getSourceForPlayer(player)
+		if source is None :
+			return
 		self.nuvo_protocol.answerRepeatStatus(source,repeat_status)
 
 	def receivedShuffleStatus(self,player,shuffle_status) :
 		if player != self.players[0] :
 			return
 		source = self.getSourceForPlayer(player)
+		if source is None :
+			return
 		self.nuvo_protocol.answerShuffleStatus(source,shuffle_status)
 
 	def receivedFavoritesChanged(self) :
