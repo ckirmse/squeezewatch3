@@ -56,6 +56,7 @@ async def zone_status(zone_id: int) :
 		"zone_name": zone.name,
 		"is_on": zone.isOn(),
 		"source": source,
+		"volume": zone.getVolume(),
 		"lines": lines,
 		"mode": mode,
 		"artwork_url": artwork_url,
@@ -86,6 +87,10 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", sou
 	elif action == "set_source" :
 		if source_id :
 			squeeze_app.nuvo_protocol.sendZoneSource(zone_id, source_id)
+	elif action == "volume_up" :
+		squeeze_app.nuvo_protocol.sendZoneVolumeUp(zone_id)
+	elif action == "volume_down" :
+		squeeze_app.nuvo_protocol.sendZoneVolumeDown(zone_id)
 	elif source == 0 :
 		return JSONResponse({"ok": False, "error": "zone is off"})
 	elif action == "play_pause" :
@@ -98,6 +103,21 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", sou
 		squeeze_app.playFavorite(source, favorite_id)
 
 	return JSONResponse({"ok": True})
+
+@http_app.get("/api/zones")
+async def zones() :
+	nuvo_zones = squeeze_app.nuvo_protocol.getZones()
+	result = []
+	for zone_id in sorted(nuvo_zones.keys()) :
+		zone = nuvo_zones[zone_id]
+		result.append({
+			"id"     : zone_id,
+			"name"   : zone.name,
+			"is_on"  : zone.isOn(),
+			"source" : zone.getSource(),
+			"volume" : zone.getVolume(),
+		})
+	return JSONResponse({"zones": result})
 
 @http_app.get("/api/sources")
 async def sources() :

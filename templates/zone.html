@@ -25,6 +25,12 @@
   <button onclick="doAction('next_track')">Next &gt;&gt;</button>
 </div>
 
+<div style="margin-top:10px;">
+  Volume: <button onclick="doAction('volume_down')">&#8722;</button>
+  <span id="volume">--</span>
+  <button onclick="doAction('volume_up')">+</button>
+</div>
+
 <p id="zonestatus"></p>
 
 <div style="margin-top:10px;" id="source-buttons"></div>
@@ -72,6 +78,7 @@ function updateDisplay(data) {
   currentSource = data.source;
   document.getElementById('onoff').textContent = data.is_on ? 'Turn Off' : 'Turn On';
   document.getElementById('zonestatus').textContent = data.is_on ? ('Source ' + data.source) : 'Off';
+  document.getElementById('volume').textContent = data.volume !== null ? data.volume : '--';
 
   var img = document.getElementById('artwork');
   if (data.artwork_url) {

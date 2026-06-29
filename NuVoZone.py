@@ -37,6 +37,7 @@ class NuVoZone :
 		self.name = name
 
 		self.source = 0
+		self.volume = None
 		self.idle_timer = None
 
 		self.menuid_artists = 27
@@ -92,6 +93,9 @@ class NuVoZone :
 
 	def getSource(self) :
 		return self.source
+
+	def getVolume(self) :
+		return self.volume
 
 	def getState(self) :
 		return self.state
@@ -551,8 +555,10 @@ class NuVoZone :
 			self.idle_timer.cancel()
 			self.idle_timer = None
 
-	def receivedOnSource(self,source) :
+	def receivedOnSource(self, source, volume=None) :
 		self.source = source
+		if volume is not None :
+			self.volume = volume
 		self.resetIdleTimer()
 
 	def _resetIdleTimer(self, delay) :

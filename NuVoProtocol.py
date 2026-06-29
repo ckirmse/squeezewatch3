@@ -192,7 +192,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		if m :
 			self.receivedZoneOff(m)
 			return
-		m = re.match(r'#Z(\d+),ON,SRC(\d+),VOL\d+,DND\d+,LOCK\d+',line)
+		m = re.match(r'#Z(\d+),ON,SRC(\d+),VOL(\d+),DND\d+,LOCK\d+',line)
 		if m :
 			self.receivedZoneOnSource(m)
 			return
@@ -386,6 +386,12 @@ class NuVoProtocol(asyncio.Protocol) :
 
 	def sendZoneSource(self,zone_num,source) :
 		self.send('*Z',zone_num,'SRC',source)
+
+	def sendZoneVolumeUp(self,zone_num) :
+		self.send('*Z',zone_num,'VOL+')
+
+	def sendZoneVolumeDown(self,zone_num) :
+		self.send('*Z',zone_num,'VOL-')
 
 	def getSourceNames(self) :
 		return self.source_names
@@ -596,16 +602,17 @@ class NuVoProtocol(asyncio.Protocol) :
 				#app.powerOff(source)
 
 	def receivedZoneOnSource(self,m) :
-		(zone_num, source) = m.groups()
+		(zone_num, source, volume) = m.groups()
 		zone_num = int(zone_num)
 		source = int(source)
+		volume = int(volume)
 		#dlog("received zone",zone_num,"on source",source)
 		if not self.isValidZone(zone_num) :
 			dlog("zone on for unknown zone",zone_num)
 			return
 		zone = self.zones[zone_num]
 		is_first_zone = not self.isAnyZoneOnThisSource(source)
-		zone.receivedOnSource(source)
+		zone.receivedOnSource(source, volume)
 		if is_first_zone and source in self.sources :
 			app.playStreamIfNeeded(source)
 		# auto-pause if no one listening
