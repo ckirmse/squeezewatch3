@@ -29,7 +29,7 @@ async def connect_lms(factory) :
 		try :
 			log("Connecting to LMS...")
 			proto = SqueezeCLIProtocol(factory)
-			await loop.create_connection(lambda: proto, 'mario', 9090)
+			await loop.create_connection(lambda: proto, 'mario.local', 9090)
 			await proto.waitDisconnected()
 			log("LMS connection lost, will reconnect")
 		except OSError as e :
@@ -44,7 +44,7 @@ async def main() :
 	if cmd_folder not in sys.path :
 		sys.path.insert(0, cmd_folder)
 
-	app.lms_host = 'mario'
+	app.lms_host = 'mario.local'
 
 	app.player_source_map = {
 		'00:27:0e:05:73:68': 3,
