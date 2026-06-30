@@ -13,6 +13,11 @@ from SqueezeWatchApp import app as squeeze_app
 
 http_app = FastAPI()
 
+def volume_to_percent(volume) :
+    if volume is None :
+        return None
+    return round((79 - volume) / 79 * 100)
+
 @http_app.get("/api/zone/{zone_id}/status")
 async def zone_status(zone_id: int) :
 	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
@@ -56,7 +61,7 @@ async def zone_status(zone_id: int) :
 		"zone_name": zone.name,
 		"is_on": zone.isOn(),
 		"source": source,
-		"volume": zone.getVolume(),
+		"volume": volume_to_percent(zone.getVolume()),
 		"lines": lines,
 		"mode": mode,
 		"artwork_url": artwork_url,
@@ -115,7 +120,7 @@ async def zones() :
 			"name"   : zone.name,
 			"is_on"  : zone.isOn(),
 			"source" : zone.getSource(),
-			"volume" : zone.getVolume(),
+			"volume" : volume_to_percent(zone.getVolume()),
 		})
 	return JSONResponse({"zones": result})
 
