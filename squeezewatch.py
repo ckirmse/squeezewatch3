@@ -46,11 +46,21 @@ async def main() :
 
 	app.lms_host = 'mario.local'
 
-	app.player_source_map = {
-		'00:27:0e:05:73:68': 3,
-		'00:22:6c:36:3d:26': 5,
+	source_configs = {
+		1: {'short_name': 'RdA', 'long_name': 'Radio A'},
+		2: {'short_name': 'RdB', 'long_name': 'Radio B'},
+		3: {'short_name': 'Sq1', 'long_name': 'SqueezeClient', 'mac': '00:27:0e:05:73:68'},
+
+		4: {'short_name': 'Bst', 'long_name': 'Basement'},
+		5: {'short_name': 'WiM', 'long_name': 'WiiM', 'mac': '00:22:6c:36:3d:26'},
+		6: {'short_name': 'FmR', 'long_name': 'Family Room'},
 	}
-	app.nuvo_protocol = NuVoProtocol((5,3))
+	app.player_source_map = {
+		config['mac']: source
+		for source, config in source_configs.items()
+		if 'mac' in config
+	}
+	app.nuvo_protocol = NuVoProtocol(source_configs)
 
 	app.factory = SqueezeCLIFactory()
 	asyncio.ensure_future(connect_lms(app.factory))

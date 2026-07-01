@@ -13,7 +13,7 @@ DESIRED_GAIN = 14
 
 class NuVoProtocol(asyncio.Protocol) :
 
-	def __init__(self,sources) :
+	def __init__(self,source_configs) :
 		self.transport = None
 		self.enabled = False
 		self.pending_restart = False
@@ -21,8 +21,20 @@ class NuVoProtocol(asyncio.Protocol) :
 		self._write_queue = None
 		self._drain_task = None
 
-		self.sources = sources;
-		self.source_strs = [str(x) for x in self.sources];
+		self.source_configs = source_configs
+		self.sources = [source for source, config in source_configs.items() if 'mac' in config]
+		self.source_strs = [str(x) for x in self.sources]
+
+		has_error = False
+		for source, config in source_configs.items() :
+			if len(config['long_name']) > 20 :
+				elog('source', source, 'long_name too long (max 20 chars):', config['long_name'])
+				has_error = True
+			if len(config['short_name']) > 3 :
+				elog('source', source, 'short_name too long (max 3 chars):', config['short_name'])
+				has_error = True
+		if has_error :
+			raise SystemExit(1)
 
 		self.source_names = {}
 
@@ -171,6 +183,9 @@ class NuVoProtocol(asyncio.Protocol) :
 		m = re.match(r'#Z(\d+)S(\d+)MENUACTIVE(\d+|0x[0-9A-F]+),(\d+)',line)
 		if m :
 			self.receivedMenuActive(m)
+			return
+		m = re.match(r'#S(\d+)NAME"(.*)"',line)
+		if m :
 			return
 		m = re.match(r'#S(\d+)DISPLINE(\d+),"(.*)"',line)
 		if m :
@@ -393,6 +408,9 @@ class NuVoProtocol(asyncio.Protocol) :
 	def sendZoneVolumeDown(self,zone_num) :
 		self.send('*Z',zone_num,'VOL-')
 
+	def sendZoneVolume(self,zone_num,volume) :
+		self.send('*Z',zone_num,'VOL',volume)
+
 	def getSourceNames(self) :
 		return self.source_names
 
@@ -438,11 +456,9 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.send('*SNUMBERS' + ','.join(sources))
 
 		#set name
-		source_index = 1
 		for source in self.sources :
-			source_str = str(source)
-			self.send('*S' + source_str + 'NAME"SqueezeBox' + str(source_index) + '"')
-			source_index += 1
+			long_name = self.source_configs[source]['long_name']
+			self.send('*S' + str(source) + 'NAME"' + long_name + '"')
 
 		# setup menu
 		self.sendTopLevelMenuItems()
@@ -506,6 +522,12 @@ class NuVoProtocol(asyncio.Protocol) :
 			if gain != desired_gain :
 				dlog("setting source",source,"to gain",desired_gain)
 				self.send('*SCFG',source,'GAIN',desired_gain)
+		if source in self.source_configs :
+			config = self.source_configs[source]
+			if config['long_name'] != name :
+				self.send('*SCFG',source,'NAME"',config['long_name'],'"')
+			if config['short_name'] != short_name :
+				self.send('*SCFG',source,'SHORTNAME"',config['short_name'],'"')
 
 
 	def receivedButton(self,m) :

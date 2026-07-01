@@ -77,6 +77,15 @@ async def zone_favorites(zone_id: int) :
 		"favorites": [{"id": favorite_id, "name": name} for favorite_id, name, url in favorites_data]
 	})
 
+@http_app.get("/api/zone/{zone_id}/volume")
+async def zone_set_volume(zone_id: int, percent: int) :
+    if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
+        return JSONResponse(status_code=404, content={"error": "zone not found"})
+    percent = max(0, min(100, percent))
+    nuvo_volume = round(79 - (percent / 100 * 79))
+    squeeze_app.nuvo_protocol.sendZoneVolume(zone_id, nuvo_volume)
+    return JSONResponse({"ok": True, "volume": percent})
+
 @http_app.get("/api/zone/{zone_id}/action")
 async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", source_id: int = 0) :
 	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
