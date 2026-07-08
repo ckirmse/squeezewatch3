@@ -29,7 +29,9 @@ async def zone_status(zone_id: int) :
 	lines = ["", "", "", ""]
 	mode = "unknown"
 
-	if source != 0 :
+	is_squeeze_source = source in squeeze_app.nuvo_protocol.source_data
+
+	if source != 0 and is_squeeze_source :
 		display_lines = squeeze_app.nuvo_protocol.getDisplayLines(source)
 		for i in range(4) :
 			lines[i] = display_lines.get(i + 1, "")
@@ -44,7 +46,7 @@ async def zone_status(zone_id: int) :
 			mode = "play"
 
 	artwork_url = ''
-	if source != 0 :
+	if source != 0 and is_squeeze_source :
 		lms_artwork_url = squeeze_app.nuvo_protocol.source_data[source].get('artwork_url', '')
 		if lms_artwork_url :
 			if lms_artwork_url.startswith('/') :
