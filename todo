@@ -1,12 +1,6 @@
 todo
-maybe get source names on startup?
 when on wiim input, get track info from the wiim (see wiim-httpapi
 add paging capability
-add ajax stuff for display
-add volume controls in web
-add track controls in web
-add music selection in web
-add siriusxm channel selections in menu interface (e.g. playerid siriusxm play 36)
 
 done
 use templates for html
@@ -17,3 +11,10 @@ fix favorites not working on startup
 fix players not working on startup
 get source data and config on startup https://smarthomebus.com/dealers/Protocols/NUVO%20Protocol.pdf
 set per-source gain on startup
+maybe get source names on startup
+add volume controls in web
+add track controls in web
+add music selection in web
+add siriusxm channel selections in menu interface (e.g. playerid siriusxm play 36)
+add ajax stuff for display
+when on radio inputs get display lines properly from nuvoprotocol

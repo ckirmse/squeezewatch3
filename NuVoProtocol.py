@@ -24,6 +24,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.source_configs = source_configs
 		self.sources = [source for source, config in source_configs.items() if 'mac' in config]
 		self.source_strs = [str(x) for x in self.sources]
+		self.all_source_strs = [str(x) for x in source_configs]
 
 		has_error = False
 		for source, config in source_configs.items() :
@@ -39,7 +40,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.source_names = {}
 
 		self.source_data = {}
-		for i in self.sources :
+		for i in source_configs :
 			# per-source data
 			self.source_data[i] = {}
 			self.source_data[i]['dispinfo'] = None
@@ -163,7 +164,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		m = re.match(r'#S(\d+).*',line)
 		if m :
 			(source,) = m.groups()
-			if not source in self.source_strs :
+			if not source in self.all_source_strs :
 				#dlog("received line about another source",line)
 				return
 

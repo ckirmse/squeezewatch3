@@ -29,13 +29,15 @@ async def zone_status(zone_id: int) :
 	lines = ["", "", "", ""]
 	mode = "unknown"
 
-	is_squeeze_source = source in squeeze_app.nuvo_protocol.source_data
+	is_known_source = source in squeeze_app.nuvo_protocol.source_data
 
-	if source != 0 and is_squeeze_source :
+	if source != 0 and is_known_source :
 		display_lines = squeeze_app.nuvo_protocol.getDisplayLines(source)
 		for i in range(4) :
 			lines[i] = display_lines.get(i + 1, "")
 		status = squeeze_app.nuvo_protocol.source_data[source]['playback_mode']
+		if status is None :
+			status = squeeze_app.nuvo_protocol.getDisplayStatus(source)
 		if status == 0 :
 			mode = "stop"
 		elif status == 2 :
@@ -46,7 +48,7 @@ async def zone_status(zone_id: int) :
 			mode = "play"
 
 	artwork_url = ''
-	if source != 0 and is_squeeze_source :
+	if source != 0 and is_known_source :
 		lms_artwork_url = squeeze_app.nuvo_protocol.source_data[source].get('artwork_url', '')
 		if lms_artwork_url :
 			if lms_artwork_url.startswith('/') :
