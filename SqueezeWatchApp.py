@@ -3,12 +3,15 @@
 import asyncio
 
 from Log import *
+from WiiMProtocol import WiiMProtocol
 
 class SqueezeWatchApp :
 
 	def __init__(self) :
 		self.lms_host = ''
 		self.lms_http_base_url = ''
+		self.source_configs = {}
+		self.wiim_protocols = {}
 
 	def resetAll(self) :
 		self.players = []
@@ -139,19 +142,35 @@ class SqueezeWatchApp :
 			return
 		self.factory.playFavorite(self.source_player_map[source],favoriteid)
 
+	def _useWiimControl(self,source) :
+		if source not in self.wiim_protocols :
+			return False
+		if self.wiim_protocols[source].isSqueezeMode() :
+			# lms is the music source; use standard squeeze controls
+			return False
+		return True
+
 	def playPause(self,source) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].playPause()
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
 		self.factory.playPause(self.source_player_map[source])
 
 	def pause(self,source) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].pause()
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
 		self.factory.pause(self.source_player_map[source])
 
 	def powerOff(self,source) :
+		if source in self.wiim_protocols :
+			self.wiim_protocols[source].pause()
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
@@ -162,6 +181,9 @@ class SqueezeWatchApp :
 			self.factory.getStatus(player)
 
 	def prevTrack(self,source) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].prevTrack()
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
@@ -170,6 +192,9 @@ class SqueezeWatchApp :
 		self.factory.prevTrack(self.source_player_map[source])
 
 	def nextTrack(self,source) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].nextTrack()
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
@@ -195,24 +220,36 @@ class SqueezeWatchApp :
 		return True
 
 	def rewind(self,source) :
+		if self._useWiimControl(source) :
+			dlog("rewind not supported for wiim source", source)
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
 		self.factory.rewind(self.source_player_map[source])
 
 	def fastForward(self,source) :
+		if self._useWiimControl(source) :
+			dlog("fastForward not supported for wiim source", source)
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
 		self.factory.fastForward(self.source_player_map[source])
 
 	async def setRepeat(self,source,repeat) :
+		if self._useWiimControl(source) :
+			dlog("setRepeat not supported for wiim source", source)
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
 		await self.factory.setRepeat(self.source_player_map[source],repeat)
 
 	async def setShuffle(self,source,shuffle) :
+		if self._useWiimControl(source) :
+			dlog("setShuffle not supported for wiim source", source)
+			return
 		if not source in self.source_player_map :
 			dlog("no source player map entry for source", source)
 			return
@@ -265,6 +302,8 @@ class SqueezeWatchApp :
 		self.newest_albums = album_data
 
 	def playStreamIfNeeded(self,source) :
+		if source in self.wiim_protocols :
+			return
 		if source not in self.source_player_map :
 			return
 		info = self.nuvo_protocol.getSourceStreamInfo(source)
@@ -275,6 +314,9 @@ class SqueezeWatchApp :
 			self.factory.playUrl(self.source_player_map[source], url)
 
 	def playPauseOrStream(self,source) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].playPause()
+			return
 		info = self.nuvo_protocol.getSourceStreamInfo(source)
 		if info is not None :
 			(is_stream, url, mode) = info
@@ -283,17 +325,30 @@ class SqueezeWatchApp :
 				return
 		self.playPause(source)
 
-	def receivedPlayers(self,players) :
+	def receivedPlayers(self,players,player_ips) :
 		self.players = players
 		for player in players :
 			if player in self.player_source_map :
 				source = self.player_source_map[player]
 				dlog("source",source,"mapped to player",player)
 				self.source_player_map[source] = player
+				if 'is_wiim' in self.source_configs.get(source, {}) :
+					if player in player_ips :
+						self._updateWiimProtocol(source, player_ips[player])
+					else :
+						elog("wiim source",source,"player",player,"has no ip; wiim polling unavailable")
 			else :
 				dlog("unknown player, no source mapping:",player)
 
 		self.nuvo_protocol.start()
+
+	def _updateWiimProtocol(self,source,host) :
+		if source in self.wiim_protocols :
+			self.wiim_protocols[source].setHost(host)
+		else :
+			log("wiim source",source,"found at",host)
+			self.wiim_protocols[source] = WiiMProtocol(source, host)
+			self.nuvo_protocol.updateWiimPolling()
 
 	def receivedArtistAlbums(self,offset,limit,count,album_data) :
 		self.nuvo_protocol.answerArtistAlbums(offset,count,album_data)
@@ -307,6 +362,12 @@ class SqueezeWatchApp :
 		source = self.getSourceForPlayer(player)
 		if source is None :
 			return
+		if source in self.wiim_protocols :
+			# wiim polling drives status for this source, not lms, but keep
+			# the stream url from lms so adjacent-favorite prev/next works
+			if 'url' in data :
+				self.nuvo_protocol.updateSourceStreamUrl(source, data['url'])
+			return
 		self.nuvo_protocol.answerStatus(source,data)
 
 	def receivedRepeatStatus(self,player,repeat_status) :
@@ -315,6 +376,8 @@ class SqueezeWatchApp :
 		source = self.getSourceForPlayer(player)
 		if source is None :
 			return
+		if source in self.wiim_protocols :
+			return
 		self.nuvo_protocol.answerRepeatStatus(source,repeat_status)
 
 	def receivedShuffleStatus(self,player,shuffle_status) :
@@ -322,6 +385,8 @@ class SqueezeWatchApp :
 			return
 		source = self.getSourceForPlayer(player)
 		if source is None :
+			return
+		if source in self.wiim_protocols :
 			return
 		self.nuvo_protocol.answerShuffleStatus(source,shuffle_status)
 

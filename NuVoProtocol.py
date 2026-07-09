@@ -22,7 +22,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		self._drain_task = None
 
 		self.source_configs = source_configs
-		self.sources = [source for source, config in source_configs.items() if 'mac' in config]
+		self.sources = [source for source, config in source_configs.items() if 'squeeze_mac' in config]
 		self.source_strs = [str(x) for x in self.sources]
 		self.all_source_strs = [str(x) for x in source_configs]
 
@@ -230,6 +230,9 @@ class NuVoProtocol(asyncio.Protocol) :
 			return
 		dlog("unhandled:",line)
 
+	def updateSourceStreamUrl(self,source,url) :
+		self.source_data[source]['last_url'] = url
+
 	def getSourceStreamInfo(self,source) :
 		if source not in self.source_data :
 			return None
@@ -281,7 +284,9 @@ class NuVoProtocol(asyncio.Protocol) :
 		self.source_data[source]['playlist_repeat'] = int(data['playlist repeat'])
 		self.source_data[source]['playlist_shuffle'] = int(data['playlist shuffle'])
 
-		self.source_data[source]['last_url'] = data.get('url', '')
+		# wiim-driven status has no url; don't clobber the url saved from lms status
+		if 'url' in data :
+			self.source_data[source]['last_url'] = data['url']
 		raw_duration = float(data['duration']) if 'duration' in data else -1.0
 		self.source_data[source]['is_stream'] = (raw_duration == 0.0)
 		self.source_data[source]['last_mode'] = data.get('mode', '')
@@ -606,6 +611,7 @@ class NuVoProtocol(asyncio.Protocol) :
 		for source in self.sources :
 			app.pause(source)
 			app.powerOff(source)
+		self.updateWiimPolling()
 
 	def receivedZoneOff(self,m) :
 		(zone_num,) = m.groups()
@@ -623,6 +629,7 @@ class NuVoProtocol(asyncio.Protocol) :
 				app.pause(source)
 				# should possibly turn off hardware sources, but not softsqueeze here...
 				#app.powerOff(source)
+		self.updateWiimPolling()
 
 	def receivedZoneOnSource(self,m) :
 		(zone_num, source, volume) = m.groups()
@@ -641,6 +648,11 @@ class NuVoProtocol(asyncio.Protocol) :
 		# auto-pause if no one listening
 		if not self.isAnyZoneOnThisSource(source) :
 			app.pause(source)
+		self.updateWiimPolling()
+
+	def updateWiimPolling(self) :
+		for (source,wiim_protocol) in app.wiim_protocols.items() :
+			wiim_protocol.setActive(self.isAnyZoneOnThisSource(source))
 
 	def isAnyZoneOnThisSource(self,source) :
 		for (zone_num,zone) in self.zones.items() :

@@ -168,6 +168,7 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			players.append(current_player)
 
 		control_players = []
+		player_ips = {}
 		for player in players :
 			if not player["isplayer"] :
 				continue
@@ -175,12 +176,15 @@ class SqueezeCLIProtocol(asyncio.Protocol) :
 			#	continue
 			dlog("found player to control",player["playerid"])
 			control_players.append(player["playerid"])
+			if "ip" in player :
+				# ip is reported as address:port
+				player_ips[player["playerid"]] = player["ip"].rsplit(':', 1)[0]
 
 		for player in control_players :
 			if player in app.player_source_map :
 				self.send(player," status - 1 tags:galduKc subscribe:5")
 
-		app.receivedPlayers(control_players)
+		app.receivedPlayers(control_players, player_ips)
 
 
 	def receivedArtists(self,m) :
