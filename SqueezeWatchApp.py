@@ -303,13 +303,31 @@ class SqueezeWatchApp :
 
 	def playStreamIfNeeded(self,source) :
 		if source in self.wiim_protocols :
+			# the cached vendor may be stale (polling only runs while the source
+			# is active), so refresh it before deciding whether to start the stream
+			asyncio.get_event_loop().create_task(self._playStreamIfNeededWiim(source))
 			return
+		self._playStreamIfNeededSqueeze(source)
+
+	async def _playStreamIfNeededWiim(self,source) :
+		live_mode = await self.wiim_protocols[source].refreshStatus()
+		if self._useWiimControl(source) :
+			# WiiM is playing its own non-squeeze source; nothing to start
+			dlog("skipping stream start; wiim source", source, "not in squeeze mode")
+			return
+		# the stored mode is stale (polling stops while the source is inactive),
+		# so use the live mode from the wiim when we have it
+		self._playStreamIfNeededSqueeze(source, live_mode)
+
+	def _playStreamIfNeededSqueeze(self,source,live_mode=None) :
 		if source not in self.source_player_map :
 			return
 		info = self.nuvo_protocol.getSourceStreamInfo(source)
 		if info is None :
 			return
 		(is_stream, url, mode) = info
+		if live_mode is not None :
+			mode = live_mode
 		if is_stream and url and mode != 'play' :
 			self.factory.playUrl(self.source_player_map[source], url)
 
@@ -364,9 +382,12 @@ class SqueezeWatchApp :
 			return
 		if source in self.wiim_protocols :
 			# wiim polling drives status for this source, not lms, but keep
-			# the stream url from lms so adjacent-favorite prev/next works
+			# the stream url and stream flag from lms so adjacent-favorite
+			# prev/next and stream auto-start work
 			if 'url' in data :
 				self.nuvo_protocol.updateSourceStreamUrl(source, data['url'])
+			if 'duration' in data :
+				self.nuvo_protocol.updateSourceIsStream(source, float(data['duration']) == 0.0)
 			return
 		self.nuvo_protocol.answerStatus(source,data)
 

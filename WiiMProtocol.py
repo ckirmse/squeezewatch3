@@ -74,6 +74,19 @@ class WiiMProtocol :
 			# some commands (e.g. setPlayerCmd) just return 'OK'
 			return text
 
+	async def refreshStatus(self) :
+		# returns the live playback mode ('play'/'pause'/'stop'), or None if unreachable
+		player_status = await self._fetchCommand('getPlayerStatus')
+		if not isinstance(player_status, dict) :
+			return None
+		self.last_vendor = player_status.get('vendor', '')
+		status = player_status.get('status', '')
+		if status == 'play' :
+			return 'play'
+		if status == 'pause' :
+			return 'pause'
+		return 'stop'
+
 	async def _pollLoop(self) :
 		from SqueezeWatchApp import app
 		while True :

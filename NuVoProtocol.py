@@ -233,6 +233,9 @@ class NuVoProtocol(asyncio.Protocol) :
 	def updateSourceStreamUrl(self,source,url) :
 		self.source_data[source]['last_url'] = url
 
+	def updateSourceIsStream(self,source,is_stream) :
+		self.source_data[source]['is_stream'] = is_stream
+
 	def getSourceStreamInfo(self,source) :
 		if source not in self.source_data :
 			return None
