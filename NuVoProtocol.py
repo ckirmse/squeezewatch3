@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import time
 
 from zigutils import *
 from Log import *
@@ -55,6 +56,9 @@ class NuVoProtocol(asyncio.Protocol) :
 			self.source_data[i]['last_mode'] = ''
 			self.source_data[i]['artwork_url'] = ''
 			self.source_data[i]['coverid'] = ''
+			self.source_data[i]['duration_sec'] = None
+			self.source_data[i]['position_sec'] = None
+			self.source_data[i]['position_timestamp'] = None
 
 		self.favorites = {}
 
@@ -290,16 +294,37 @@ class NuVoProtocol(asyncio.Protocol) :
 		# wiim-driven status has no url; don't clobber the url saved from lms status
 		if 'url' in data :
 			self.source_data[source]['last_url'] = data['url']
-		raw_duration = float(data['duration']) if 'duration' in data else -1.0
-		self.source_data[source]['is_stream'] = (raw_duration == 0.0)
+
+		raw_duration = None
+		if 'duration' in data :
+			raw_duration = float(data['duration'])
+
+		is_stream = False
+		if raw_duration is not None and raw_duration == 0.0 :
+			is_stream = True
+		self.source_data[source]['is_stream'] = is_stream
 		self.source_data[source]['last_mode'] = data.get('mode', '')
 
-		duration = 0
-		if 'duration' in data :
-			duration = int(10*float(data['duration']))
-		position = 0
+		duration_sec = None
+		if raw_duration is not None and raw_duration > 0.0 :
+			duration_sec = raw_duration
+		self.source_data[source]['duration_sec'] = duration_sec
+
+		position_sec = None
 		if 'time' in data and len(data['time']) > 0 :
-			position = int(10*float(data['time']))
+			position_sec = float(data['time'])
+		self.source_data[source]['position_sec'] = position_sec
+
+		self.source_data[source]['position_timestamp'] = None
+		if position_sec is not None :
+			self.source_data[source]['position_timestamp'] = time.time()
+
+		duration = 0
+		if duration_sec is not None :
+			duration = int(10*duration_sec)
+		position = 0
+		if position_sec is not None :
+			position = int(10*position_sec)
 		if duration == 0 and duration > 0:
 			duration = 6000
 		mode = 0

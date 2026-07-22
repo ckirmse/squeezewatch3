@@ -15,6 +15,10 @@
   <div id="line4">&nbsp;</div>
 </div>
 
+<div id="progress" style="display:none; margin-top:5px;">
+  <span id="elapsed"></span> / <span id="duration"></span>
+</div>
+
 <div style="margin-top:10px;">
   <img id="artwork" src="" alt="" style="display:none; max-width:200px; max-height:200px;">
 </div>
@@ -45,6 +49,38 @@ var zoneId = {{ zone_id }};
 var zoneIsOn = false;
 var currentSource = 0;
 
+var progressBase = null;
+var progressBaseTime = null;
+var progressDuration = null;
+var progressPlaying = false;
+
+function formatTime(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  var m = Math.floor(sec / 60);
+  var s = sec % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+function renderProgress() {
+  var container = document.getElementById('progress');
+  if (progressBase === null || progressDuration === null) {
+    container.style.display = 'none';
+    return;
+  }
+  var elapsed = progressBase;
+  if (progressPlaying) {
+    elapsed += (Date.now() - progressBaseTime) / 1000;
+  }
+  if (elapsed > progressDuration) {
+    elapsed = progressDuration;
+  }
+  container.style.display = '';
+  document.getElementById('elapsed').textContent = formatTime(elapsed);
+  document.getElementById('duration').textContent = formatTime(progressDuration);
+}
+
+setInterval(renderProgress, 250);
+
 function doAction(action) {
   fetch('/api/zone/' + zoneId + '/action?action=' + action);
 }
@@ -73,6 +109,17 @@ function updateDisplay(data) {
 
   var button = document.getElementById('playpause');
   button.textContent = data.mode === 'play' ? 'Pause' : 'Play';
+
+  progressPlaying = (data.mode === 'play');
+  progressDuration = data.duration_sec;
+  if (data.position_sec !== null && data.position_sec !== undefined && data.duration_sec) {
+    progressBase = data.position_sec + (data.position_age_sec || 0);
+    progressBaseTime = Date.now();
+  } else {
+    progressBase = null;
+    progressBaseTime = null;
+  }
+  renderProgress();
 
   zoneIsOn = data.is_on;
   currentSource = data.source;

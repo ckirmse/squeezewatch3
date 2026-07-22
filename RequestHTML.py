@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+import time
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -28,6 +29,9 @@ async def zone_status(zone_id: int) :
 
 	lines = ["", "", "", ""]
 	mode = "unknown"
+	duration_sec = None
+	position_sec = None
+	position_age_sec = None
 
 	is_known_source = source in squeeze_app.nuvo_protocol.source_data
 
@@ -46,6 +50,12 @@ async def zone_status(zone_id: int) :
 			mode = "pause"
 		elif status is not None :
 			mode = "play"
+
+		duration_sec = squeeze_app.nuvo_protocol.source_data[source]['duration_sec']
+		position_sec = squeeze_app.nuvo_protocol.source_data[source]['position_sec']
+		position_timestamp = squeeze_app.nuvo_protocol.source_data[source]['position_timestamp']
+		if position_timestamp is not None :
+			position_age_sec = time.time() - position_timestamp
 
 	artwork_url = ''
 	if source != 0 and is_known_source :
@@ -69,6 +79,9 @@ async def zone_status(zone_id: int) :
 		"lines": lines,
 		"mode": mode,
 		"artwork_url": artwork_url,
+		"duration_sec": duration_sec,
+		"position_sec": position_sec,
+		"position_age_sec": position_age_sec,
 	})
 
 @http_app.get("/api/zone/{zone_id}/favorites")
