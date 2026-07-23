@@ -14,6 +14,14 @@ var progressBase = null;
 var progressBaseTime = null;
 var progressDuration = null;
 var progressPlaying = false;
+var progressLastDisplayedSecond = null;
+var progressLastMode = null;
+
+// Reconciliation tuning: differences larger than the snap threshold are treated
+// as real discontinuities (seek, track change); smaller ones are slewed away
+// gradually so the displayed clock never visibly skips or jumps back.
+var PROGRESS_SNAP_THRESHOLD_SECONDS = 2;
+var PROGRESS_SLEW_GAIN = 0.1;
 
 bootstrapZones.forEach(function(zone) {
   zonesById[zone.id] = zone;
@@ -40,24 +48,46 @@ function sendAction(zoneId, action, extraQuery) {
 
 // ===== now playing / progress =====
 
+function currentLocalPosition() {
+  if (progressBase === null) {
+    return null;
+  }
+  var elapsed = progressBase;
+  if (progressPlaying) {
+    elapsed += (Date.now() - progressBaseTime) / 1000;
+  }
+  return elapsed;
+}
+
+function snapProgress(seconds) {
+  progressBase = seconds;
+  progressBaseTime = Date.now();
+  progressLastDisplayedSecond = null;
+}
+
 function renderProgress() {
   var seekBlock = document.getElementById('seek-block');
   if (progressBase === null || progressDuration === null) {
     seekBlock.classList.add('hidden');
     return;
   }
-  var elapsed = progressBase;
-  if (progressPlaying) {
-    elapsed += (Date.now() - progressBaseTime) / 1000;
+  var elapsed = currentLocalPosition();
+  if (elapsed < 0) {
+    elapsed = 0;
   }
   if (elapsed > progressDuration) {
     elapsed = progressDuration;
   }
+  var displayedSecond = Math.floor(elapsed);
+  if (progressPlaying && progressLastDisplayedSecond !== null && displayedSecond < progressLastDisplayedSecond) {
+    displayedSecond = progressLastDisplayedSecond;
+  }
+  progressLastDisplayedSecond = displayedSecond;
   var percent = clampFraction(elapsed / progressDuration) * 100;
   seekBlock.classList.remove('hidden');
   document.getElementById('seek-fill').style.width = percent + '%';
   document.getElementById('seek-knob').style.left = percent + '%';
-  document.getElementById('seek-elapsed').textContent = formatTime(elapsed);
+  document.getElementById('seek-elapsed').textContent = formatTime(displayedSecond);
   document.getElementById('seek-total').textContent = formatTime(progressDuration);
 }
 
@@ -124,14 +154,41 @@ function renderStatus(data) {
     artworkImage.classList.remove('visible');
   }
 
+  var previousDuration = progressDuration;
+  var previousMode = progressLastMode;
+  var localPosition = currentLocalPosition();
+
   progressPlaying = (data.mode === 'play');
   progressDuration = data.duration_sec;
+  progressLastMode = data.mode;
+
   if (data.position_sec !== null && data.position_sec !== undefined && data.duration_sec) {
-    progressBase = data.position_sec + (data.position_age_sec || 0);
-    progressBaseTime = Date.now();
+    // The server position sample only advances while playing; when paused or
+    // stopped its age grows but the true position does not.
+    var serverPosition = data.position_sec;
+    if (data.mode === 'play') {
+      serverPosition += (data.position_age_sec || 0);
+    }
+    var mustSnap = false;
+    if (localPosition === null) {
+      mustSnap = true;
+    } else if (data.duration_sec !== previousDuration) {
+      mustSnap = true;
+    } else if (data.mode !== previousMode) {
+      mustSnap = true;
+    } else if (Math.abs(serverPosition - localPosition) > PROGRESS_SNAP_THRESHOLD_SECONDS) {
+      mustSnap = true;
+    }
+    if (mustSnap) {
+      snapProgress(serverPosition);
+    } else {
+      progressBase = localPosition + (serverPosition - localPosition) * PROGRESS_SLEW_GAIN;
+      progressBaseTime = Date.now();
+    }
   } else {
     progressBase = null;
     progressBaseTime = null;
+    progressLastDisplayedSecond = null;
   }
   renderProgress();
 
@@ -196,14 +253,12 @@ document.getElementById('play-button').onclick = function() {
   sendAction(activeZoneId, 'play_pause').then(pollActiveZone);
 };
 document.getElementById('prev-button').onclick = function() {
-  progressBase = 0;
-  progressBaseTime = Date.now();
+  snapProgress(0);
   renderProgress();
   sendAction(activeZoneId, 'prev_track');
 };
 document.getElementById('next-button').onclick = function() {
-  progressBase = 0;
-  progressBaseTime = Date.now();
+  snapProgress(0);
   renderProgress();
   sendAction(activeZoneId, 'next_track');
 };
@@ -222,8 +277,7 @@ seekScrubber.addEventListener('pointerdown', function(event) {
   }
   var fraction = scrubberFraction(seekScrubber, event.clientX);
   var seconds = Math.round(fraction * progressDuration);
-  progressBase = seconds;
-  progressBaseTime = Date.now();
+  snapProgress(seconds);
   renderProgress();
   fetch('/api/zone/' + activeZoneId + '/seek?seconds=' + seconds);
 });
