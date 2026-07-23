@@ -162,6 +162,23 @@ class SqueezeCLIFactory :
 
 		self.connector.send(player," time +30")
 
+	def seek(self,player,seconds) :
+		if not self.connector :
+			return
+
+		self.connector.send(player," time ",seconds)
+
+	def seekOffset(self,player,offset) :
+		if not self.connector :
+			return
+
+		# lms requires an explicit sign for a relative seek
+		if offset >= 0 :
+			offset_text = "+" + str(offset)
+		else :
+			offset_text = str(offset)
+		self.connector.send(player," time ",offset_text)
+
 	async def setRepeat(self,player,repeat) :
 		if not self.connector :
 			return

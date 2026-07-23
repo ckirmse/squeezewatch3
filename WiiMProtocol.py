@@ -33,6 +33,7 @@ class WiiMProtocol :
 		self.poll_task = None
 		self.was_reachable = True
 		self.last_vendor = None
+		self.last_position_seconds = None
 		# the wiim uses a self-signed certificate, so verification is disabled
 		self.session = aiohttp.ClientSession(
 			connector=aiohttp.TCPConnector(ssl=False),
@@ -114,6 +115,7 @@ class WiiMProtocol :
 		current_position_ms = int(player_status.get('curpos', '0'))
 		data['duration'] = str(total_length_ms / 1000)
 		data['time'] = str(current_position_ms / 1000)
+		self.last_position_seconds = current_position_ms / 1000
 
 		loop_mode = int(player_status.get('loop', '4'))
 		if loop_mode in (0, 1, 2) :
@@ -172,3 +174,15 @@ class WiiMProtocol :
 
 	def setVolume(self,volume) :
 		self._sendCommand('setPlayerCmd:vol:' + str(volume))
+
+	def seek(self,seconds) :
+		self._sendCommand('setPlayerCmd:seek:' + str(int(seconds)))
+
+	def seekOffset(self,offset) :
+		if self.last_position_seconds is None :
+			dlog("no known position for wiim source",self.source,"; cannot seek by offset")
+			return
+		target_seconds = self.last_position_seconds + offset
+		if target_seconds < 0 :
+			target_seconds = 0
+		self.seek(target_seconds)

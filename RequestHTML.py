@@ -103,6 +103,24 @@ async def zone_set_volume(zone_id: int, percent: int) :
     squeeze_app.nuvo_protocol.sendZoneVolume(zone_id, nuvo_volume)
     return JSONResponse({"ok": True, "volume": percent})
 
+@http_app.get("/api/zone/{zone_id}/seek")
+async def zone_seek(zone_id: int, seconds: float = None, offset: float = None) :
+    if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
+        return JSONResponse(status_code=404, content={"error": "zone not found"})
+    if (seconds is None) == (offset is None) :
+        return JSONResponse({"ok": False, "error": "provide exactly one of seconds or offset"})
+    zone = squeeze_app.nuvo_protocol.getZone(zone_id)
+    source = zone.getSource()
+    if source == 0 :
+        return JSONResponse({"ok": False, "error": "zone is off"})
+    if seconds is not None :
+        if seconds < 0 :
+            seconds = 0
+        squeeze_app.seek(source, seconds)
+    else :
+        squeeze_app.seekOffset(source, offset)
+    return JSONResponse({"ok": True})
+
 @http_app.get("/api/zone/{zone_id}/action")
 async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", source_id: int = 0) :
 	if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :

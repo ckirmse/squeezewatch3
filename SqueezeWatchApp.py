@@ -237,6 +237,24 @@ class SqueezeWatchApp :
 			return
 		self.factory.fastForward(self.source_player_map[source])
 
+	def seek(self,source,seconds) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].seek(seconds)
+			return
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
+		self.factory.seek(self.source_player_map[source], seconds)
+
+	def seekOffset(self,source,offset) :
+		if self._useWiimControl(source) :
+			self.wiim_protocols[source].seekOffset(offset)
+			return
+		if not source in self.source_player_map :
+			dlog("no source player map entry for source", source)
+			return
+		self.factory.seekOffset(self.source_player_map[source], offset)
+
 	async def setRepeat(self,source,repeat) :
 		if self._useWiimControl(source) :
 			dlog("setRepeat not supported for wiim source", source)
