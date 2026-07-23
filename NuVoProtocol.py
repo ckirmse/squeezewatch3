@@ -286,6 +286,12 @@ class NuVoProtocol(asyncio.Protocol) :
 	def clearFavorites(self) :
 		self.favorites = {}
 
+	def updateSourcePosition(self,source,position_seconds) :
+		if source not in self.source_data :
+			return
+		self.source_data[source]['position_sec'] = position_seconds
+		self.source_data[source]['position_timestamp'] = time.time()
+
 	def answerStatus(self,source,data) :
 		# perhaps should look at data['showBriefly']
 		self.source_data[source]['playlist_repeat'] = int(data['playlist repeat'])

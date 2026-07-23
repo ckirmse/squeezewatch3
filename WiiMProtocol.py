@@ -176,7 +176,13 @@ class WiiMProtocol :
 		self._sendCommand('setPlayerCmd:vol:' + str(volume))
 
 	def seek(self,seconds) :
-		self._sendCommand('setPlayerCmd:seek:' + str(int(seconds)))
+		from SqueezeWatchApp import app
+		target_seconds = int(seconds)
+		self._sendCommand('setPlayerCmd:seek:' + str(target_seconds))
+		# optimistically record the target so relative seeks compound correctly
+		# and the web api reports the new position before the next poll
+		self.last_position_seconds = target_seconds
+		app.nuvo_protocol.updateSourcePosition(self.source, target_seconds)
 
 	def seekOffset(self,offset) :
 		if self.last_position_seconds is None :

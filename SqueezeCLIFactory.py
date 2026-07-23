@@ -167,6 +167,8 @@ class SqueezeCLIFactory :
 			return
 
 		self.connector.send(player," time ",seconds)
+		# poll now so the cached position reflects the seek before the next subscribe:5 tick
+		self.connector.send(player," status - 1 tags:galduKc")
 
 	def seekOffset(self,player,offset) :
 		if not self.connector :
@@ -178,6 +180,8 @@ class SqueezeCLIFactory :
 		else :
 			offset_text = str(offset)
 		self.connector.send(player," time ",offset_text)
+		# poll now so the cached position reflects the seek before the next subscribe:5 tick
+		self.connector.send(player," status - 1 tags:galduKc")
 
 	async def setRepeat(self,player,repeat) :
 		if not self.connector :
