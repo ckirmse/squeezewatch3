@@ -56,6 +56,9 @@ class NuVoProtocol(asyncio.Protocol) :
 			self.source_data[i]['last_mode'] = ''
 			self.source_data[i]['artwork_url'] = ''
 			self.source_data[i]['coverid'] = ''
+			self.source_data[i]['title'] = ''
+			self.source_data[i]['artist'] = ''
+			self.source_data[i]['album'] = ''
 			self.source_data[i]['duration_sec'] = None
 			self.source_data[i]['position_sec'] = None
 			self.source_data[i]['position_timestamp'] = None
@@ -374,6 +377,9 @@ class NuVoProtocol(asyncio.Protocol) :
 
 		self.source_data[source]['artwork_url'] = data.get('artwork_url', '')
 		self.source_data[source]['coverid'] = data.get('coverid', '')
+		self.source_data[source]['title'] = title
+		self.source_data[source]['artist'] = artist
+		self.source_data[source]['album'] = album
 
 		self.source_data[source]['playback_mode'] = mode
 

@@ -5,6 +5,7 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from Log import *
 
@@ -12,12 +13,11 @@ from renderTemplate import renderTemplate
 
 from SqueezeWatchApp import app as squeeze_app
 
+from zigutils import volumeToPercent, percentToVolume
+
 http_app = FastAPI()
 
-def volume_to_percent(volume) :
-    if volume is None :
-        return None
-    return round((79 - volume) / 79 * 100)
+http_app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @http_app.get("/api/zone/{zone_id}/status")
 async def zone_status(zone_id: int) :
@@ -29,6 +29,9 @@ async def zone_status(zone_id: int) :
 
 	lines = ["", "", "", ""]
 	mode = "unknown"
+	title = ""
+	artist = ""
+	album = ""
 	duration_sec = None
 	position_sec = None
 	position_age_sec = None
@@ -50,6 +53,10 @@ async def zone_status(zone_id: int) :
 			mode = "pause"
 		elif status is not None :
 			mode = "play"
+
+		title = squeeze_app.nuvo_protocol.source_data[source]['title']
+		artist = squeeze_app.nuvo_protocol.source_data[source]['artist']
+		album = squeeze_app.nuvo_protocol.source_data[source]['album']
 
 		duration_sec = squeeze_app.nuvo_protocol.source_data[source]['duration_sec']
 		position_sec = squeeze_app.nuvo_protocol.source_data[source]['position_sec']
@@ -75,9 +82,12 @@ async def zone_status(zone_id: int) :
 		"zone_name": zone.name,
 		"is_on": zone.isOn(),
 		"source": source,
-		"volume": volume_to_percent(zone.getVolume()),
+		"volume": volumeToPercent(zone.getVolume()),
 		"lines": lines,
 		"mode": mode,
+		"title": title,
+		"artist": artist,
+		"album": album,
 		"artwork_url": artwork_url,
 		"duration_sec": duration_sec,
 		"position_sec": position_sec,
@@ -99,7 +109,7 @@ async def zone_set_volume(zone_id: int, percent: int) :
     if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
         return JSONResponse(status_code=404, content={"error": "zone not found"})
     percent = max(0, min(100, percent))
-    nuvo_volume = round(79 - (percent / 100 * 79))
+    nuvo_volume = percentToVolume(percent)
     squeeze_app.nuvo_protocol.sendZoneVolume(zone_id, nuvo_volume)
     return JSONResponse({"ok": True, "volume": percent})
 
@@ -164,7 +174,7 @@ async def zones() :
 			"name"   : zone.name,
 			"is_on"  : zone.isOn(),
 			"source" : zone.getSource(),
-			"volume" : volume_to_percent(zone.getVolume()),
+			"volume" : volumeToPercent(zone.getVolume()),
 		})
 	return JSONResponse({"zones": result})
 
@@ -204,7 +214,7 @@ async def handle(request: Request, path: str) :
 	processed_path = [s for s in raw_path if s != '']
 
 	if len(processed_path) == 0 :
-		page = "home"
+		page = "player"
 		path_parameters = []
 	else :
 		page = processed_path[0]

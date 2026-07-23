@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Montserrat:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ background:#141613; }
+  a{ color:#48c4d8; text-decoration:none; }
+  a:hover{ color:#6fdcec; }
+  @keyframes eqbar{ 0%{ transform:scaleY(0.35);} 50%{ transform:scaleY(1);} 100%{ transform:scaleY(0.5);} }
+  @keyframes spinvinyl{ to{ transform:rotate(360deg);} }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#141613; background-image:radial-gradient(140% 120% at 20% 0%, rgba(72,196,216,0.06), transparent 55%), url(assets/bg_texture.png); background-size:auto, 128px 64px; font-family:'Roboto',sans-serif; color:#c8ced6; padding:clamp(16px,4vw,44px) clamp(14px,4vw,40px) clamp(40px,7vw,72px);">
+
+  <div style="max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:clamp(18px,3.5vw,32px);">
+
+    <!-- ===== header ===== -->
+    <header style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:clamp(14px,2.5vw,22px);">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div style="width:38px; height:38px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#464c54,#23272d); box-shadow:-3px -3px 7px rgba(255,255,255,0.05), 3px 3px 8px rgba(0,0,0,0.6);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48c4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3zM3 19a2 2 0 0 0 2 2h1a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1H3z"></path></svg>
+        </div>
+        <div>
+          <div style="font-family:'Fira Code',monospace; font-size:10.5px; letter-spacing:3px; color:#48c4d8; text-transform:uppercase;">Whole-House Audio</div>
+          <div style="font-family:'Montserrat',sans-serif; font-weight:600; font-size:clamp(17px,2.6vw,21px); color:#eef2f6; letter-spacing:0.2px;">Amplr</div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <!-- favorites -->
+      <button onClick="{{ toggleFavs }}" aria-label="Favorites" style="appearance:none; border:none; cursor:pointer; display:flex; align-items:center; gap:9px; padding:10px 15px; border-radius:8px; font-family:'Montserrat',sans-serif; font-size:14px; color:#d3d9df; background:linear-gradient(180deg,#2a2f35,#1f2328); box-shadow:0 2px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.06);" style-hover="background:linear-gradient(180deg,#2f353c,#22262c);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#48c4d8" stroke="#48c4d8" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 9.7l5.9-.9z"></path></svg>
+        <span>Favorites</span>
+      </button>
+
+      <!-- room dropdown -->
+      <div style="position:relative;">
+        <button onClick="{{ toggleRooms }}" style="appearance:none; border:none; cursor:pointer; display:flex; align-items:center; gap:12px; padding:10px 14px; min-width:190px; border-radius:8px; font-family:'Roboto',sans-serif; color:#d3d9df; background:linear-gradient(180deg,#2a2f35,#1f2328); box-shadow:0 2px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.06);" style-hover="background:linear-gradient(180deg,#2f353c,#22262c);">
+          <span style="width:8px; height:8px; border-radius:50%; flex:none; background:#48c4d8; box-shadow:0 0 8px rgba(72,196,216,0.8);"></span>
+          <span style="flex:1; text-align:left; font-size:14px; font-family:'Montserrat',sans-serif;">{{ activeRoom }}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a929b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:{{ chevronTransform }}; transition:transform .18s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <sc-if value="{{ roomsOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; top:calc(100% + 8px); right:0; left:0; z-index:20; padding:6px; border-radius:10px; background:linear-gradient(180deg,#20242a,#191c21); box-shadow:0 12px 28px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.08);">
+            <sc-for list="{{ roomList }}" as="r" hint-placeholder-count="4">
+              <button onClick="{{ r.select }}" style="appearance:none; border:none; cursor:pointer; width:100%; text-align:left; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px; font-family:'Montserrat',sans-serif; font-size:14px; color:{{ r.color }}; background:{{ r.bg }};" style-hover="background:rgba(72,196,216,0.10);">
+                <span style="width:6px; height:6px; border-radius:50%; flex:none; background:{{ r.dot }};"></span>
+                {{ r.name }}
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      </div>
+    </header>
+
+    <!-- ===== favorites overlay ===== -->
+    <sc-if value="{{ favsOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ toggleFavs }}" style="position:fixed; inset:0; z-index:50; background:rgba(8,10,12,0.72); backdrop-filter:blur(3px); display:flex; align-items:flex-end; justify-content:center; padding:clamp(0px,3vw,40px);">
+        <div onClick="{{ stop }}" style="width:100%; max-width:760px; max-height:min(84vh,720px); display:flex; flex-direction:column; border-radius:16px 16px 0 0; background:linear-gradient(180deg,#20242a,#171a1e); box-shadow:0 -12px 40px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.08); overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:clamp(18px,3vw,24px) clamp(18px,3vw,26px); border-bottom:1px solid rgba(255,255,255,0.07);">
+            <div style="display:flex; align-items:center; gap:11px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#48c4d8"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 9.7l5.9-.9z"></path></svg>
+              <h2 style="font-family:'Montserrat',sans-serif; font-weight:600; font-size:clamp(17px,3vw,20px); color:#eef2f6;">Favorites</h2>
+              <span style="font-family:'Fira Code',monospace; font-size:11px; color:#6f7883;">{{ favCount }} saved</span>
+            </div>
+            <button onClick="{{ toggleFavs }}" aria-label="Close" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); color:#8a929b;" style-hover="background:rgba(255,255,255,0.09); color:#e4e9ee;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+          <div style="overflow-y:auto; padding:clamp(14px,2.5vw,20px); display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+            <sc-for list="{{ favorites }}" as="f" hint-placeholder-count="8">
+              <button onClick="{{ f.play }}" style="appearance:none; cursor:pointer; text-align:left; display:flex; align-items:center; gap:12px; padding:14px 15px; border-radius:11px; background:{{ f.bg }}; border:1px solid {{ f.border }};" style-hover="background:rgba(72,196,216,0.10);">
+                <span style="width:7px; height:7px; flex:none; border-radius:50%; background:{{ f.dot }};"></span>
+                <span style="min-width:0; flex:1; font-family:'Montserrat',sans-serif; font-size:14px; color:{{ f.titleColor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ f.title }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===== player ===== -->
+    <div style="display:flex; gap:clamp(20px,3.5vw,34px); flex-wrap:wrap; align-items:stretch;">
+
+      <!-- album art -->
+      <div style="flex:1 1 300px; max-width:400px; min-width:min(300px,100%);">
+        <div style="position:relative; width:100%; aspect-ratio:1/1; border-radius:14px; padding:14px; background:linear-gradient(145deg,#3a4048,#20242a); box-shadow:-7px -7px 16px rgba(255,255,255,0.04), 8px 9px 22px rgba(0,0,0,0.6);">
+          <div style="position:relative; width:100%; height:100%; border-radius:8px; overflow:hidden; background:#0b0d10; box-shadow:inset 3px 3px 10px rgba(0,0,0,0.85), inset -2px -2px 6px rgba(255,255,255,0.05);">
+            <div style="position:absolute; inset:0; background:linear-gradient(135deg,#26506e,#7d3a55 55%,#2a2140); opacity:0.92;"></div>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+              <div style="width:34%; aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle at 50% 50%, #1a1d22 0 26%, #2c3138 27% 52%, #23272d 53%); box-shadow:0 6px 20px rgba(0,0,0,0.5); animation:{{ vinylAnim }};">
+                <div style="position:absolute; inset:0; margin:auto; width:14%; aspect-ratio:1/1; border-radius:50%; background:#48c4d8; box-shadow:0 0 12px rgba(72,196,216,0.8);"></div>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute; top:22px; right:22px; display:flex; gap:4px; align-items:flex-end; height:22px;">
+            <sc-if value="{{ playing }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; gap:4px; align-items:flex-end; height:22px;">
+                <span style="width:4px; height:100%; border-radius:2px; background:#48c4d8; transform-origin:bottom; animation:eqbar 0.9s ease-in-out infinite;"></span>
+                <span style="width:4px; height:100%; border-radius:2px; background:#48c4d8; transform-origin:bottom; animation:eqbar 0.9s ease-in-out infinite 0.3s;"></span>
+                <span style="width:4px; height:100%; border-radius:2px; background:#48c4d8; transform-origin:bottom; animation:eqbar 0.9s ease-in-out infinite 0.6s;"></span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <!-- now playing + controls -->
+      <div style="flex:2 1 360px; min-width:min(320px,100%); display:flex; flex-direction:column; gap:clamp(16px,2.5vw,22px);">
+
+        <!-- data field -->
+        <div style="flex:1; border-radius:14px; padding:clamp(20px,3vw,30px); background:#181b18; background-image:url(assets/bg_texture.png); background-size:128px 64px; box-shadow:inset 3px 3px 9px rgba(0,0,0,0.72), inset -3px -3px 8px rgba(255,255,255,0.05); display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-family:'Fira Code',monospace; font-size:10.5px; letter-spacing:2.5px; color:#48c4d8; text-transform:uppercase; margin-bottom:10px;">Now Playing</div>
+          <div style="font-family:'Montserrat',sans-serif; font-weight:500; font-size:clamp(22px,4vw,30px); color:#eef2f6; line-height:1.1; margin-bottom:6px;">{{ title }}</div>
+          <div style="font-family:'Roboto',sans-serif; font-size:clamp(13px,2vw,15px); color:#8b939c; margin-bottom:clamp(20px,3vw,28px);">{{ artist }}</div>
+
+          <!-- scrubber (1a) -->
+          <div onClick="{{ seek }}" style="cursor:pointer; padding:8px 0;">
+            <div style="position:relative; height:6px; border-radius:3px; background:rgba(0,0,0,0.55); box-shadow:inset 0 1px 3px rgba(0,0,0,0.7);">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:{{ progressPct }}; border-radius:3px; background:linear-gradient(90deg,#2f9fb0,#48c4d8); box-shadow:0 0 8px rgba(72,196,216,0.55);"></div>
+              <div style="position:absolute; left:{{ progressPct }}; top:50%; width:14px; height:14px; border-radius:50%; background:#eaf7fa; transform:translate(-50%,-50%); box-shadow:0 0 9px rgba(72,196,216,0.9), 0 1px 2px rgba(0,0,0,0.5);"></div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:10px; font-family:'Fira Code',monospace; font-size:12px;">
+            <span style="color:#48c4d8;">{{ elapsed }}</span>
+            <span style="color:#6f7883;">{{ total }}</span>
+          </div>
+        </div>
+
+        <!-- transport -->
+        <div style="display:flex; align-items:center; justify-content:center; gap:clamp(18px,4vw,30px);">
+          <button onClick="{{ prev }}" aria-label="Previous" style="appearance:none; border:none; cursor:pointer; width:clamp(54px,13vw,64px); height:clamp(54px,13vw,64px); border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#464c54,#23272d); box-shadow:-5px -5px 11px rgba(255,255,255,0.05), 5px 6px 14px rgba(0,0,0,0.6), inset 1px 1px 1px rgba(255,255,255,0.07);" style-active="background:linear-gradient(145deg,#22262c,#3a4048); box-shadow:inset 4px 4px 8px rgba(0,0,0,0.6), inset -3px -3px 6px rgba(255,255,255,0.05), 0 0 10px rgba(72,196,216,0.4);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#aeb6bf"><path d="M6 5h2v14H6z"></path><path d="M20 5v14l-11-7z"></path></svg>
+          </button>
+
+          <button onClick="{{ togglePlay }}" aria-label="Play/Pause" style="appearance:none; border:none; cursor:pointer; width:clamp(76px,20vw,92px); height:clamp(76px,20vw,92px); border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#464c54,#22262c); box-shadow:-6px -6px 14px rgba(255,255,255,0.06), 7px 8px 18px rgba(0,0,0,0.65), inset 1px 1px 2px rgba(255,255,255,0.08), 0 0 0 1px rgba(72,196,216,0.25);" style-active="background:linear-gradient(145deg,#1e2228,#33393f); box-shadow:inset 5px 5px 10px rgba(0,0,0,0.65), inset -3px -3px 7px rgba(255,255,255,0.05), 0 0 16px rgba(72,196,216,0.55);">
+            <sc-if value="{{ playing }}" hint-placeholder-val="{{ true }}">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="#eaf7fa"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+            </sc-if>
+            <sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="#eaf7fa"><path d="M8 5v14l11-7z"></path></svg>
+            </sc-if>
+          </button>
+
+          <button onClick="{{ next }}" aria-label="Next" style="appearance:none; border:none; cursor:pointer; width:clamp(54px,13vw,64px); height:clamp(54px,13vw,64px); border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#464c54,#23272d); box-shadow:-5px -5px 11px rgba(255,255,255,0.05), 5px 6px 14px rgba(0,0,0,0.6), inset 1px 1px 1px rgba(255,255,255,0.07);" style-active="background:linear-gradient(145deg,#22262c,#3a4048); box-shadow:inset 4px 4px 8px rgba(0,0,0,0.6), inset -3px -3px 6px rgba(255,255,255,0.05), 0 0 10px rgba(72,196,216,0.4);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#aeb6bf"><path d="M16 5h2v14h-2z"></path><path d="M4 5v14l11-7z"></path></svg>
+          </button>
+        </div>
+
+        <!-- volume -->
+        <div style="display:flex; align-items:center; gap:14px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a929b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
+          <div onClick="{{ setVol }}" style="cursor:pointer; flex:1; padding:8px 0;">
+            <div style="position:relative; height:6px; border-radius:3px; background:rgba(0,0,0,0.55); box-shadow:inset 0 1px 3px rgba(0,0,0,0.7);">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:{{ volPct }}; border-radius:3px; background:linear-gradient(90deg,#2f9fb0,#48c4d8); box-shadow:0 0 7px rgba(72,196,216,0.5);"></div>
+              <div style="position:absolute; left:{{ volPct }}; top:50%; width:14px; height:14px; border-radius:50%; background:#eaf7fa; transform:translate(-50%,-50%); box-shadow:0 0 8px rgba(72,196,216,0.85), 0 1px 2px rgba(0,0,0,0.5);"></div>
+            </div>
+          </div>
+          <span style="flex:none; width:38px; text-align:right; font-family:'Fira Code',monospace; font-size:12px; color:#6f7883;">{{ volLabel }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== rooms / grouping ===== -->
+    <section style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; align-items:baseline; gap:12px;">
+        <h2 style="font-family:'Montserrat',sans-serif; font-weight:600; font-size:15px; color:#e4e9ee; letter-spacing:0.3px;">Playing in</h2>
+        <span style="font-family:'Fira Code',monospace; font-size:11px; color:#6f7883;">tap a room to group / ungroup</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        <sc-for list="{{ groupChips }}" as="c" hint-placeholder-count="5">
+          <button onClick="{{ c.toggle }}" style="appearance:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; font-family:'Montserrat',sans-serif; font-size:14px; color:{{ c.color }}; background:{{ c.bg }}; border:1px solid {{ c.border }}; box-shadow:{{ c.shadow }};">
+            <span style="width:9px; height:9px; border-radius:50%; flex:none; background:{{ c.dot }}; box-shadow:{{ c.dotGlow }};"></span>
+            <span>{{ c.name }}</span>
+            <span style="font-family:'Fira Code',monospace; font-size:10.5px; color:{{ c.metaColor }};">{{ c.meta }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    playing: true,
+    elapsed: 102,          // 1:42
+    total: 245,            // 4:05
+    vol: 0.62,
+    trackIdx: 0,
+    activeRoom: 'Kitchen',
+    roomsOpen: false,
+    favsOpen: false,
+    group: { 'Kitchen': true, 'Living Room': true, 'Patio': false, 'Bedroom': false, 'Office': false },
+  };
+
+  tracks = [
+    { title: 'Midnight Drive', artist: 'The Midnight', total: 245 },
+    { title: 'Sunset', artist: 'Petit Biscuit', total: 228 },
+    { title: 'Nightcall', artist: 'Kavinsky', total: 258 },
+  ];
+  rooms = ['Kitchen', 'Living Room', 'Patio', 'Bedroom', 'Office'];
+
+  // Placeholder set — the web app replaces this with the ~20 favorite names from the server (each is a single string).
+  favorites = [
+    'Midnight Drive', 'Sunset', 'Nightcall', 'Chill Evenings', 'Deep Focus',
+    'Random Access Memories', 'Discovery', 'Morning Coffee', 'Jazz Classics', 'Redbone',
+    'Instrumental', 'Dinner Party', '80s Synthwave', 'A Moment Apart', 'Weekend Vibes',
+    'Resonance', 'Late Night Radio', 'Acoustic Sunday', 'Blade Runner OST', 'House Party',
+  ];
+
+  componentDidMount(){
+    this._t = setInterval(() => {
+      if (!this.state.playing) return;
+      this.setState(s => ({ elapsed: s.elapsed >= s.total ? 0 : s.elapsed + 1 }));
+    }, 1000);
+  }
+  componentWillUnmount(){ clearInterval(this._t); }
+
+  fmt(sec){ const m = Math.floor(sec/60), s = Math.floor(sec%60); return m + ':' + String(s).padStart(2,'0'); }
+
+  loadTrack(i){
+    const n = this.tracks.length, idx = ((i % n) + n) % n, t = this.tracks[idx];
+    this.setState({ trackIdx: idx, total: t.total, elapsed: 0 });
+  }
+
+  playFavorite(i){
+    const name = this.favorites[i];
+    this.tracks[this.state.trackIdx] = { title: name, artist: 'Favorite', total: 245 };
+    this.setState({ total: 245, elapsed: 0, playing: true, favsOpen: false });
+  }
+
+  renderVals(){
+    const s = this.state, t = this.tracks[s.trackIdx];
+    const frac = Math.min(1, s.elapsed / s.total);
+
+    const roomList = this.rooms.map(name => ({
+      name,
+      select: () => this.setState({ activeRoom: name, roomsOpen: false }),
+      color: name === s.activeRoom ? '#eaf7fa' : '#c8ced6',
+      bg: name === s.activeRoom ? 'rgba(72,196,216,0.12)' : 'transparent',
+      dot: name === s.activeRoom ? '#48c4d8' : 'rgba(150,160,170,0.4)',
+    }));
+
+    const favorites = this.favorites.map((name, i) => ({
+      title: name,
+      bg: name === t.title ? 'rgba(72,196,216,0.12)' : 'rgba(255,255,255,0.02)',
+      border: name === t.title ? 'rgba(72,196,216,0.4)' : 'rgba(255,255,255,0.06)',
+      titleColor: name === t.title ? '#eaf7fa' : '#e4e9ee',
+      dot: name === t.title ? '#48c4d8' : 'rgba(150,160,170,0.35)',
+      play: () => this.playFavorite(i),
+    }));
+
+    const groupChips = this.rooms.map(name => {
+      const on = !!s.group[name];
+      return {
+        name,
+        toggle: () => this.setState(st => ({ group: { ...st.group, [name]: !st.group[name] } })),
+        color: on ? '#eaf7fa' : '#8b939c',
+        bg: on ? 'linear-gradient(180deg,rgba(72,196,216,0.16),rgba(72,196,216,0.06))' : 'linear-gradient(180deg,#23272d,#1c1f24)',
+        border: on ? 'rgba(72,196,216,0.4)' : 'rgba(255,255,255,0.06)',
+        shadow: on ? '0 0 14px rgba(72,196,216,0.18), inset 0 1px 0 rgba(255,255,255,0.06)' : '0 2px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)',
+        dot: on ? '#48c4d8' : 'rgba(150,160,170,0.35)',
+        dotGlow: on ? '0 0 8px rgba(72,196,216,0.85)' : 'none',
+        meta: on ? this.volLabelFor(name) : 'off',
+        metaColor: on ? '#48c4d8' : '#5f6873',
+      };
+    });
+
+    return {
+      playing: s.playing,
+      paused: !s.playing,
+      title: t.title,
+      artist: t.artist + ' · ' + s.activeRoom,
+      elapsed: this.fmt(s.elapsed),
+      total: this.fmt(s.total),
+      progressPct: (frac * 100).toFixed(2) + '%',
+      volPct: (s.vol * 100).toFixed(1) + '%',
+      volLabel: Math.round(s.vol * 100) + '',
+      activeRoom: s.activeRoom,
+      roomsOpen: s.roomsOpen,
+      chevronTransform: s.roomsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      vinylAnim: s.playing ? 'spinvinyl 8s linear infinite' : 'none',
+      roomList,
+      groupChips,
+      favorites,
+      favsOpen: s.favsOpen,
+      favCount: this.favorites.length,
+      toggleFavs: () => this.setState(st => ({ favsOpen: !st.favsOpen })),
+      stop: (e) => e.stopPropagation(),
+      togglePlay: () => this.setState(st => ({ playing: !st.playing })),
+      prev: () => this.loadTrack(s.trackIdx - 1),
+      next: () => this.loadTrack(s.trackIdx + 1),
+      toggleRooms: () => this.setState(st => ({ roomsOpen: !st.roomsOpen })),
+      seek: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        this.setState({ elapsed: Math.round(f * this.state.total) });
+      },
+      setVol: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        this.setState({ vol: f });
+      },
+    };
+  }
+
+  volLabelFor(){ return Math.round(this.state.vol * 100) + ''; }
+}
+</script>
+</body>
+</html>

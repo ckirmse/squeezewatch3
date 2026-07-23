@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kirmse 4</title>
+<link rel="stylesheet" href="/static/player.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== header ===== -->
+  <header class="header">
+    <div class="brand">
+      <div class="logo-tile">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#48c4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3zM3 19a2 2 0 0 0 2 2h1a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1H3z"></path></svg>
+      </div>
+      <div>
+        <div class="eyebrow">Whole-House Audio</div>
+        <div class="wordmark">Kirmse 4</div>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <button id="favorites-button" class="panel-button" aria-label="Favorites">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#48c4d8" stroke="#48c4d8" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 9.7l5.9-.9z"></path></svg>
+        <span>Favorites</span>
+      </button>
+
+      <div id="room-dropdown" class="room-dropdown">
+        <button id="room-dropdown-button" class="panel-button room-dropdown-button">
+          <span id="room-dropdown-dot" class="status-dot off"></span>
+          <span id="room-dropdown-name" class="room-name"></span>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a929b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div id="room-menu" class="room-menu"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== player ===== -->
+  <div class="player-row">
+
+    <div class="art-column">
+      <div id="art-bezel" class="art-bezel">
+        <div class="art-well">
+          <div class="art-placeholder"></div>
+          <div class="vinyl-wrap">
+            <div class="vinyl">
+              <div class="vinyl-center"></div>
+            </div>
+          </div>
+          <img id="artwork-image" class="artwork-image" src="" alt="">
+        </div>
+        <div class="equalizer">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-column">
+
+      <div class="data-field">
+        <div id="now-playing-content" class="now-playing-content">
+        <div class="now-playing-row">
+          <div class="now-playing-eyebrow">Now Playing</div>
+          <span id="station-name" class="station-name"></span>
+        </div>
+        <div id="track-title" class="track-title">&nbsp;</div>
+        <div id="track-artist" class="track-artist">&nbsp;</div>
+
+        <div id="seek-block" class="seek-block hidden">
+          <div id="seek-scrubber" class="scrubber">
+            <div class="scrubber-track">
+              <div id="seek-fill" class="scrubber-fill"></div>
+              <div id="seek-knob" class="scrubber-knob"></div>
+            </div>
+          </div>
+          <div class="seek-times">
+            <span id="seek-elapsed" class="elapsed"></span>
+            <span id="seek-total" class="total"></span>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button id="prev-button" class="round-button" aria-label="Previous">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#aeb6bf"><path d="M6 5h2v14H6z"></path><path d="M20 5v14l-11-7z"></path></svg>
+        </button>
+
+        <button id="play-button" class="round-button play-button mode-unknown" aria-label="Play/Pause">
+          <svg class="icon-pause" width="34" height="34" viewBox="0 0 24 24" fill="#eaf7fa"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+          <svg class="icon-play" width="34" height="34" viewBox="0 0 24 24" fill="#eaf7fa"><path d="M8 5v14l11-7z"></path></svg>
+        </button>
+
+        <button id="next-button" class="round-button" aria-label="Next">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#aeb6bf"><path d="M16 5h2v14h-2z"></path><path d="M4 5v14l11-7z"></path></svg>
+        </button>
+      </div>
+
+      <div class="volume-row">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a929b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
+        <div id="volume-scrubber" class="scrubber">
+          <div class="scrubber-track">
+            <div id="volume-fill" class="scrubber-fill"></div>
+            <div id="volume-knob" class="scrubber-knob"></div>
+          </div>
+        </div>
+        <span id="volume-readout" class="volume-readout"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== playing in ===== -->
+  <section class="chip-section">
+    <div class="chip-section-heading">
+      <h2>Playing in</h2>
+      <span class="chip-section-hint">tap a room to group / ungroup</span>
+    </div>
+    <div id="zone-chips" class="chip-row"></div>
+  </section>
+
+  <!-- ===== source ===== -->
+  <section class="chip-section">
+    <div class="chip-section-heading">
+      <h2>Source</h2>
+      <span class="chip-section-hint">tap to switch this room's source</span>
+    </div>
+    <div id="source-chips" class="chip-row"></div>
+  </section>
+
+</div>
+
+<!-- ===== favorites overlay ===== -->
+<div id="favorites-overlay" class="favorites-overlay">
+  <div id="favorites-panel" class="favorites-panel">
+    <div class="favorites-header">
+      <div class="favorites-title-group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#48c4d8"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 9.7l5.9-.9z"></path></svg>
+        <h2>Favorites</h2>
+        <span id="favorites-count" class="favorites-count"></span>
+      </div>
+      <button id="favorites-close" class="favorites-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div id="favorites-list" class="favorites-list"></div>
+  </div>
+</div>
+
+<script>
+var bootstrapZones = {{ zones_json }};
+var initialZoneId = {{ initial_zone_id_json }};
+</script>
+<script src="/static/player.js"></script>
+</body>
+</html>

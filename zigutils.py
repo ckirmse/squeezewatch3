@@ -49,3 +49,15 @@ def Func(base_level=0) :
 def FileLine() :
 	"returns filename and line number that called this"
 	return inspect.stack()[1][1] + " " + inspect.stack()[1][2]
+
+def volumeToPercent(volume) :
+	"convert a NuVo volume (0 loudest to 79 quietest) to a percent (0 to 100)"
+	if volume is None :
+		return None
+	return round((79 - volume) / 79 * 100)
+
+def percentToVolume(percent) :
+	"convert a percent (0 to 100) to a NuVo volume (0 loudest to 79 quietest)"
+	if percent is None :
+		return None
+	return round(79 - (percent / 100 * 79))
