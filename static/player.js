@@ -10,6 +10,15 @@ var favorites = null;
 var draggingVolume = false;
 var lastVolumeSendTime = 0;
 
+// Connection state, mirroring the ESP32 controller: a single failed status poll
+// flips the UI into the trouble state, and the next successful poll clears it.
+// serverErrorStatus is the HTTP status when the server answered with an error,
+// and null when the server could not be reached at all.
+var statusValid = false;
+var serverContactFailed = false;
+var serverErrorStatus = null;
+var serverRetryCount = 0;
+
 var progressBase = null;
 var progressBaseTime = null;
 var progressDuration = null;
@@ -39,11 +48,83 @@ function formatTime(seconds) {
 }
 
 function sendAction(zoneId, action, extraQuery) {
+  if (!statusValid) {
+    return Promise.resolve(null);
+  }
   var url = '/api/zone/' + zoneId + '/action?action=' + action;
   if (extraQuery) {
     url += '&' + extraQuery;
   }
-  return fetch(url);
+  return fetch(url).catch(function() {
+    return null;
+  });
+}
+
+// ===== connection state =====
+
+function setControlsDisabled(disabled) {
+  document.getElementById('play-button').disabled = disabled;
+  document.getElementById('prev-button').disabled = disabled;
+  document.getElementById('next-button').disabled = disabled;
+  document.getElementById('favorites-button').disabled = disabled;
+  var volumeScrubberElement = document.getElementById('volume-scrubber');
+  if (disabled) {
+    volumeScrubberElement.classList.add('disabled');
+  } else {
+    volumeScrubberElement.classList.remove('disabled');
+  }
+}
+
+function connectionStatusTitle() {
+  if (serverErrorStatus !== null) {
+    return 'Server error ' + serverErrorStatus;
+  }
+  if (serverContactFailed) {
+    return 'Server unreachable';
+  }
+  return 'Connecting to server…';
+}
+
+function renderConnectionState() {
+  var page = document.querySelector('.page');
+  if (statusValid) {
+    page.classList.remove('disconnected');
+    return;
+  }
+
+  page.classList.add('disconnected');
+  document.getElementById('connection-status-title').textContent = connectionStatusTitle();
+  var detail = '';
+  if (serverRetryCount > 0) {
+    detail = 'retry ' + serverRetryCount;
+  }
+  document.getElementById('connection-status-detail').textContent = detail;
+
+  setControlsDisabled(true);
+  favoritesOverlay.classList.remove('open');
+  // Refetch on recovery; the cached list may be stale by then.
+  favorites = null;
+}
+
+function noteServerFailure(httpStatus) {
+  statusValid = false;
+  serverContactFailed = true;
+  serverErrorStatus = httpStatus;
+  ++serverRetryCount;
+  renderConnectionState();
+}
+
+function noteServerSuccess() {
+  if (!statusValid && sources.length === 0) {
+    // The one-shot source load happens at page load and may have been the
+    // request that failed; pick it back up now that the server is answering.
+    loadSources();
+  }
+  statusValid = true;
+  serverContactFailed = false;
+  serverErrorStatus = null;
+  serverRetryCount = 0;
+  renderConnectionState();
 }
 
 // ===== now playing / progress =====
@@ -66,6 +147,11 @@ function snapProgress(seconds) {
 }
 
 function renderProgress() {
+  if (!statusValid) {
+    // Freeze the clock rather than keep counting off a position we can no
+    // longer confirm with the server.
+    return;
+  }
   var seekBlock = document.getElementById('seek-block');
   if (progressBase === null || progressDuration === null) {
     seekBlock.classList.add('hidden');
@@ -103,17 +189,7 @@ function renderStatus(data) {
     nowPlayingContent.classList.add('hidden');
   }
 
-  var controlsDisabled = !data.is_on;
-  document.getElementById('play-button').disabled = controlsDisabled;
-  document.getElementById('prev-button').disabled = controlsDisabled;
-  document.getElementById('next-button').disabled = controlsDisabled;
-  document.getElementById('favorites-button').disabled = controlsDisabled;
-  var volumeScrubberElement = document.getElementById('volume-scrubber');
-  if (controlsDisabled) {
-    volumeScrubberElement.classList.add('disabled');
-  } else {
-    volumeScrubberElement.classList.remove('disabled');
-  }
+  setControlsDisabled(!data.is_on);
 
   var title = data.title;
   if (!title) {
@@ -227,23 +303,45 @@ function pollActiveZone() {
     return;
   }
   fetch('/api/zone/' + activeZoneId + '/status')
-    .then(function(response) { return response.json(); })
+    .then(function(response) {
+      if (!response.ok) {
+        throw response.status;
+      }
+      return response.json();
+    })
     .then(function(data) {
+      noteServerSuccess();
       if (data.zone_id === activeZoneId) {
         renderStatus(data);
+      }
+    })
+    .catch(function(failure) {
+      if (typeof failure === 'number') {
+        noteServerFailure(failure);
+      } else {
+        noteServerFailure(null);
       }
     });
 }
 
+// The active-zone poll owns the connection state; this one only suppresses its
+// own render so a failure does not blow up mid-update.
 function pollAllZones() {
   fetch('/api/zones')
-    .then(function(response) { return response.json(); })
+    .then(function(response) {
+      if (!response.ok) {
+        throw response.status;
+      }
+      return response.json();
+    })
     .then(function(data) {
       data.zones.forEach(function(zone) {
         zonesById[zone.id] = zone;
       });
       renderZoneChips();
       renderRoomMenu();
+    })
+    .catch(function() {
     });
 }
 
@@ -272,14 +370,15 @@ function scrubberFraction(scrubber, clientX) {
 
 var seekScrubber = document.getElementById('seek-scrubber');
 seekScrubber.addEventListener('pointerdown', function(event) {
-  if (!progressDuration) {
+  if (!progressDuration || !statusValid) {
     return;
   }
   var fraction = scrubberFraction(seekScrubber, event.clientX);
   var seconds = Math.round(fraction * progressDuration);
   snapProgress(seconds);
   renderProgress();
-  fetch('/api/zone/' + activeZoneId + '/seek?seconds=' + seconds);
+  fetch('/api/zone/' + activeZoneId + '/seek?seconds=' + seconds).catch(function() {
+  });
 });
 
 function renderVolume(percent) {
@@ -295,12 +394,16 @@ function renderVolume(percent) {
 }
 
 function sendVolume(percent, force) {
+  if (!statusValid) {
+    return;
+  }
   var now = Date.now();
   if (!force && now - lastVolumeSendTime < 150) {
     return;
   }
   lastVolumeSendTime = now;
-  fetch('/api/zone/' + activeZoneId + '/volume?percent=' + percent);
+  fetch('/api/zone/' + activeZoneId + '/volume?percent=' + percent).catch(function() {
+  });
 }
 
 var volumeScrubber = document.getElementById('volume-scrubber');
@@ -474,12 +577,24 @@ function renderSourceChips() {
   });
 }
 
-fetch('/api/sources')
-  .then(function(response) { return response.json(); })
-  .then(function(data) {
-    sources = data.sources;
-    renderSourceChips();
-  });
+function loadSources() {
+  fetch('/api/sources')
+    .then(function(response) {
+      if (!response.ok) {
+        throw response.status;
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      sources = data.sources;
+      renderSourceChips();
+    })
+    .catch(function() {
+      sources = [];
+    });
+}
+
+loadSources();
 
 // ===== favorites overlay =====
 
@@ -505,10 +620,18 @@ document.getElementById('favorites-panel').onclick = function(event) {
 
 function loadFavorites() {
   fetch('/api/zone/' + activeZoneId + '/favorites')
-    .then(function(response) { return response.json(); })
+    .then(function(response) {
+      if (!response.ok) {
+        throw response.status;
+      }
+      return response.json();
+    })
     .then(function(data) {
       favorites = data.favorites;
       renderFavorites();
+    })
+    .catch(function() {
+      favorites = null;
     });
 }
 
