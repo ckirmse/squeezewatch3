@@ -108,7 +108,7 @@ async def zone_favorites(zone_id: int) :
 async def zone_set_volume(zone_id: int, percent: int) :
     if not squeeze_app.nuvo_protocol.isValidZone(zone_id) :
         return JSONResponse(status_code=404, content={"error": "zone not found"})
-    percent = max(0, min(100, percent))
+    percent = max(0, min(50, percent))
     nuvo_volume = percentToVolume(percent)
     squeeze_app.nuvo_protocol.sendZoneVolume(zone_id, nuvo_volume)
     return JSONResponse({"ok": True, "volume": percent})
