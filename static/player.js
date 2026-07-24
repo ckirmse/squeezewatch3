@@ -1,36 +1,38 @@
 // Amplr player client logic.
 // Expects globals from the template: bootstrapZones (array), initialZoneId (int or null).
 
-var activeZoneId = initialZoneId;
-var zonesById = {};
-var activeStatus = null;
-var sources = [];
-var favorites = null;
+let activeZoneId = initialZoneId;
+const zonesById = {};
+let activeStatus = null;
+let sources = [];
+let favorites = null;
 
-var draggingVolume = false;
-var lastVolumeSendTime = 0;
+const favoritesOverlay = document.getElementById('favorites-overlay');
+
+let draggingVolume = false;
+let lastVolumeSendTime = 0;
 
 // Connection state, mirroring the ESP32 controller: a single failed status poll
 // flips the UI into the trouble state, and the next successful poll clears it.
 // serverErrorStatus is the HTTP status when the server answered with an error,
 // and null when the server could not be reached at all.
-var statusValid = false;
-var serverContactFailed = false;
-var serverErrorStatus = null;
-var serverRetryCount = 0;
+let statusValid = false;
+let serverContactFailed = false;
+let serverErrorStatus = null;
+let serverRetryCount = 0;
 
-var progressBase = null;
-var progressBaseTime = null;
-var progressDuration = null;
-var progressPlaying = false;
-var progressLastDisplayedSecond = null;
-var progressLastMode = null;
+let progressBase = null;
+let progressBaseTime = null;
+let progressDuration = null;
+let progressPlaying = false;
+let progressLastDisplayedSecond = null;
+let progressLastMode = null;
 
 // Reconciliation tuning: differences larger than the snap threshold are treated
 // as real discontinuities (seek, track change); smaller ones are slewed away
 // gradually so the displayed clock never visibly skips or jumps back.
-var PROGRESS_SNAP_THRESHOLD_SECONDS = 2;
-var PROGRESS_SLEW_GAIN = 0.1;
+const PROGRESS_SNAP_THRESHOLD_SECONDS = 2;
+const PROGRESS_SLEW_GAIN = 0.1;
 
 bootstrapZones.forEach(function(zone) {
   zonesById[zone.id] = zone;
@@ -42,8 +44,8 @@ function clampFraction(value) {
 
 function formatTime(seconds) {
   seconds = Math.max(0, Math.floor(seconds));
-  var minutes = Math.floor(seconds / 60);
-  var remainder = seconds % 60;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
   return minutes + ':' + (remainder < 10 ? '0' : '') + remainder;
 }
 
@@ -51,7 +53,7 @@ function sendAction(zoneId, action, extraQuery) {
   if (!statusValid) {
     return Promise.resolve(null);
   }
-  var url = '/api/zone/' + zoneId + '/action?action=' + action;
+  let url = '/api/zone/' + zoneId + '/action?action=' + action;
   if (extraQuery) {
     url += '&' + extraQuery;
   }
@@ -67,7 +69,7 @@ function setControlsDisabled(disabled) {
   document.getElementById('prev-button').disabled = disabled;
   document.getElementById('next-button').disabled = disabled;
   document.getElementById('favorites-button').disabled = disabled;
-  var volumeScrubberElement = document.getElementById('volume-scrubber');
+  const volumeScrubberElement = document.getElementById('volume-scrubber');
   if (disabled) {
     volumeScrubberElement.classList.add('disabled');
   } else {
@@ -86,7 +88,7 @@ function connectionStatusTitle() {
 }
 
 function renderConnectionState() {
-  var page = document.querySelector('.page');
+  const page = document.querySelector('.page');
   if (statusValid) {
     page.classList.remove('disconnected');
     return;
@@ -94,7 +96,7 @@ function renderConnectionState() {
 
   page.classList.add('disconnected');
   document.getElementById('connection-status-title').textContent = connectionStatusTitle();
-  var detail = '';
+  let detail = '';
   if (serverRetryCount > 0) {
     detail = 'retry ' + serverRetryCount;
   }
@@ -133,7 +135,7 @@ function currentLocalPosition() {
   if (progressBase === null) {
     return null;
   }
-  var elapsed = progressBase;
+  let elapsed = progressBase;
   if (progressPlaying) {
     elapsed += (Date.now() - progressBaseTime) / 1000;
   }
@@ -152,24 +154,24 @@ function renderProgress() {
     // longer confirm with the server.
     return;
   }
-  var seekBlock = document.getElementById('seek-block');
+  const seekBlock = document.getElementById('seek-block');
   if (progressBase === null || progressDuration === null) {
     seekBlock.classList.add('hidden');
     return;
   }
-  var elapsed = currentLocalPosition();
+  let elapsed = currentLocalPosition();
   if (elapsed < 0) {
     elapsed = 0;
   }
   if (elapsed > progressDuration) {
     elapsed = progressDuration;
   }
-  var displayedSecond = Math.floor(elapsed);
+  let displayedSecond = Math.floor(elapsed);
   if (progressPlaying && progressLastDisplayedSecond !== null && displayedSecond < progressLastDisplayedSecond) {
     displayedSecond = progressLastDisplayedSecond;
   }
   progressLastDisplayedSecond = displayedSecond;
-  var percent = clampFraction(elapsed / progressDuration) * 100;
+  const percent = clampFraction(elapsed / progressDuration) * 100;
   seekBlock.classList.remove('hidden');
   document.getElementById('seek-fill').style.width = percent + '%';
   document.getElementById('seek-knob').style.left = percent + '%';
@@ -182,7 +184,7 @@ setInterval(renderProgress, 250);
 function renderStatus(data) {
   activeStatus = data;
 
-  var nowPlayingContent = document.getElementById('now-playing-content');
+  const nowPlayingContent = document.getElementById('now-playing-content');
   if (data.is_on) {
     nowPlayingContent.classList.remove('hidden');
   } else {
@@ -191,15 +193,15 @@ function renderStatus(data) {
 
   setControlsDisabled(!data.is_on);
 
-  var title = data.title;
+  let title = data.title;
   if (!title) {
     title = data.lines[3];
   }
-  var artist = data.artist;
+  let artist = data.artist;
   if (!artist) {
     artist = data.lines[2];
   }
-  var station = data.album;
+  let station = data.album;
   if (!station) {
     station = data.lines[1];
   }
@@ -210,17 +212,17 @@ function renderStatus(data) {
   document.getElementById('track-artist').textContent = artist || ' ';
   document.getElementById('station-name').textContent = station;
 
-  var playButton = document.getElementById('play-button');
+  const playButton = document.getElementById('play-button');
   playButton.className = 'round-button play-button mode-' + data.mode;
 
-  var artBezel = document.getElementById('art-bezel');
+  const artBezel = document.getElementById('art-bezel');
   if (data.mode === 'play') {
     artBezel.classList.add('playing');
   } else {
     artBezel.classList.remove('playing');
   }
 
-  var artworkImage = document.getElementById('artwork-image');
+  const artworkImage = document.getElementById('artwork-image');
   if (data.artwork_url) {
     if (artworkImage.getAttribute('src') !== data.artwork_url) {
       artworkImage.src = data.artwork_url;
@@ -230,9 +232,9 @@ function renderStatus(data) {
     artworkImage.classList.remove('visible');
   }
 
-  var previousDuration = progressDuration;
-  var previousMode = progressLastMode;
-  var localPosition = currentLocalPosition();
+  const previousDuration = progressDuration;
+  const previousMode = progressLastMode;
+  const localPosition = currentLocalPosition();
 
   progressPlaying = (data.mode === 'play');
   progressDuration = data.duration_sec;
@@ -241,11 +243,11 @@ function renderStatus(data) {
   if (data.position_sec !== null && data.position_sec !== undefined && data.duration_sec) {
     // The server position sample only advances while playing; when paused or
     // stopped its age grows but the true position does not.
-    var serverPosition = data.position_sec;
+    let serverPosition = data.position_sec;
     if (data.mode === 'play') {
       serverPosition += (data.position_age_sec || 0);
     }
-    var mustSnap = false;
+    let mustSnap = false;
     if (localPosition === null) {
       mustSnap = true;
     } else if (data.duration_sec !== previousDuration) {
@@ -273,7 +275,7 @@ function renderStatus(data) {
   }
 
   document.getElementById('room-dropdown-name').textContent = data.zone_name;
-  var dropdownDot = document.getElementById('room-dropdown-dot');
+  const dropdownDot = document.getElementById('room-dropdown-dot');
   if (data.is_on) {
     dropdownDot.classList.remove('off');
   } else {
@@ -290,7 +292,7 @@ function renderStatus(data) {
   renderZoneChips();
 }
 
-var artworkImageElement = document.getElementById('artwork-image');
+const artworkImageElement = document.getElementById('artwork-image');
 artworkImageElement.onload = function() {
   artworkImageElement.classList.add('visible');
 };
@@ -364,17 +366,17 @@ document.getElementById('next-button').onclick = function() {
 // ===== scrubbers =====
 
 function scrubberFraction(scrubber, clientX) {
-  var rect = scrubber.querySelector('.scrubber-track').getBoundingClientRect();
+  const rect = scrubber.querySelector('.scrubber-track').getBoundingClientRect();
   return clampFraction((clientX - rect.left) / rect.width);
 }
 
-var seekScrubber = document.getElementById('seek-scrubber');
+const seekScrubber = document.getElementById('seek-scrubber');
 seekScrubber.addEventListener('pointerdown', function(event) {
   if (!progressDuration || !statusValid) {
     return;
   }
-  var fraction = scrubberFraction(seekScrubber, event.clientX);
-  var seconds = Math.round(fraction * progressDuration);
+  const fraction = scrubberFraction(seekScrubber, event.clientX);
+  const seconds = Math.round(fraction * progressDuration);
   snapProgress(seconds);
   renderProgress();
   fetch('/api/zone/' + activeZoneId + '/seek?seconds=' + seconds).catch(function() {
@@ -397,7 +399,7 @@ function sendVolume(percent, force) {
   if (!statusValid) {
     return;
   }
-  var now = Date.now();
+  const now = Date.now();
   if (!force && now - lastVolumeSendTime < 150) {
     return;
   }
@@ -406,11 +408,11 @@ function sendVolume(percent, force) {
   });
 }
 
-var volumeScrubber = document.getElementById('volume-scrubber');
+const volumeScrubber = document.getElementById('volume-scrubber');
 
 function handleVolumePointer(event, force) {
-  var fraction = scrubberFraction(volumeScrubber, event.clientX);
-  var percent = Math.round(fraction * 100);
+  const fraction = scrubberFraction(volumeScrubber, event.clientX);
+  const percent = Math.round(fraction * 100);
   renderVolume(percent);
   if (zonesById[activeZoneId]) {
     zonesById[activeZoneId].volume = percent;
@@ -443,7 +445,7 @@ volumeScrubber.addEventListener('pointercancel', function() {
 
 // ===== room dropdown =====
 
-var roomDropdown = document.getElementById('room-dropdown');
+const roomDropdown = document.getElementById('room-dropdown');
 
 document.getElementById('room-dropdown-button').onclick = function(event) {
   event.stopPropagation();
@@ -459,7 +461,7 @@ function selectZone(zoneId) {
   activeZoneId = zoneId;
   roomDropdown.classList.remove('open');
   history.replaceState(null, '', '/?zone=' + zoneId);
-  var zone = zonesById[zoneId];
+  const zone = zonesById[zoneId];
   if (zone) {
     document.getElementById('room-dropdown-name').textContent = zone.name;
   }
@@ -469,11 +471,11 @@ function selectZone(zoneId) {
 }
 
 function renderRoomMenu() {
-  var menu = document.getElementById('room-menu');
+  const menu = document.getElementById('room-menu');
   menu.textContent = '';
   sortedZoneIds().forEach(function(zoneId) {
-    var zone = zonesById[zoneId];
-    var row = document.createElement('button');
+    const zone = zonesById[zoneId];
+    const row = document.createElement('button');
     row.className = 'room-menu-row';
     if (zoneId === activeZoneId) {
       row.className += ' selected';
@@ -481,7 +483,7 @@ function renderRoomMenu() {
     if (zone.is_on) {
       row.className += ' on';
     }
-    var dot = document.createElement('span');
+    const dot = document.createElement('span');
     dot.className = 'menu-dot';
     row.appendChild(dot);
     row.appendChild(document.createTextNode(zone.name));
@@ -500,22 +502,22 @@ function sortedZoneIds() {
 // ===== zone (room) chips =====
 
 function renderZoneChips() {
-  var container = document.getElementById('zone-chips');
+  const container = document.getElementById('zone-chips');
   container.textContent = '';
   sortedZoneIds().forEach(function(zoneId) {
-    var zone = zonesById[zoneId];
-    var chip = document.createElement('button');
+    const zone = zonesById[zoneId];
+    const chip = document.createElement('button');
     chip.className = zone.is_on ? 'chip on' : 'chip';
 
-    var dot = document.createElement('span');
+    const dot = document.createElement('span');
     dot.className = 'chip-dot';
     chip.appendChild(dot);
 
-    var name = document.createElement('span');
+    const name = document.createElement('span');
     name.textContent = zone.name;
     chip.appendChild(name);
 
-    var meta = document.createElement('span');
+    const meta = document.createElement('span');
     meta.className = 'chip-meta';
     if (zone.is_on) {
       meta.textContent = (zone.volume === null || zone.volume === undefined) ? '' : zone.volume;
@@ -532,7 +534,7 @@ function renderZoneChips() {
 }
 
 function toggleZoneChip(zoneId) {
-  var zone = zonesById[zoneId];
+  const zone = zonesById[zoneId];
   if (zone.is_on) {
     zone.is_on = false;
     renderZoneChips();
@@ -540,7 +542,7 @@ function toggleZoneChip(zoneId) {
   } else {
     zone.is_on = true;
     renderZoneChips();
-    var groupSource = null;
+    let groupSource = null;
     if (activeStatus && activeStatus.source) {
       groupSource = activeStatus.source;
     }
@@ -555,18 +557,18 @@ function toggleZoneChip(zoneId) {
 // ===== source chips =====
 
 function renderSourceChips() {
-  var container = document.getElementById('source-chips');
+  const container = document.getElementById('source-chips');
   container.textContent = '';
   sources.forEach(function(source) {
-    var chip = document.createElement('button');
-    var isCurrent = activeStatus && activeStatus.is_on && activeStatus.source === source.id;
+    const chip = document.createElement('button');
+    const isCurrent = activeStatus && activeStatus.is_on && activeStatus.source === source.id;
     chip.className = isCurrent ? 'chip on' : 'chip';
 
-    var dot = document.createElement('span');
+    const dot = document.createElement('span');
     dot.className = 'chip-dot';
     chip.appendChild(dot);
 
-    var name = document.createElement('span');
+    const name = document.createElement('span');
     name.textContent = source.name;
     chip.appendChild(name);
 
@@ -598,7 +600,6 @@ loadSources();
 
 // ===== favorites overlay =====
 
-var favoritesOverlay = document.getElementById('favorites-overlay');
 
 document.getElementById('favorites-button').onclick = function() {
   favoritesOverlay.classList.add('open');
@@ -637,18 +638,18 @@ function loadFavorites() {
 
 function renderFavorites() {
   document.getElementById('favorites-count').textContent = favorites.length + ' saved';
-  var list = document.getElementById('favorites-list');
+  const list = document.getElementById('favorites-list');
   list.textContent = '';
-  var currentTitle = null;
-  var currentStation = null;
+  let currentTitle = null;
+  let currentStation = null;
   if (activeStatus) {
     currentTitle = activeStatus.title;
     currentStation = activeStatus.album;
   }
   favorites.forEach(function(favorite) {
-    var item = document.createElement('button');
+    const item = document.createElement('button');
     item.className = 'favorite-item';
-    var isCurrent = false;
+    let isCurrent = false;
     if (currentTitle && favorite.name === currentTitle) {
       isCurrent = true;
     }
@@ -662,11 +663,11 @@ function renderFavorites() {
       item.className += ' current';
     }
 
-    var dot = document.createElement('span');
+    const dot = document.createElement('span');
     dot.className = 'favorite-dot';
     item.appendChild(dot);
 
-    var name = document.createElement('span');
+    const name = document.createElement('span');
     name.className = 'favorite-name';
     name.textContent = favorite.name;
     item.appendChild(name);
