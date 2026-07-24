@@ -91,13 +91,24 @@ class WiiMProtocol :
 	async def _pollLoop(self) :
 		from SqueezeWatchApp import app
 		while True :
-			player_status = await self._fetchCommand('getPlayerStatus')
-			meta_info = await self._fetchCommand('getMetaInfo')
-			if isinstance(player_status, dict) :
-				self.last_vendor = player_status.get('vendor', '')
-				data = self._buildStatusData(player_status, meta_info)
-				app.nuvo_protocol.answerStatus(self.source, data)
+			try :
+				player_status = await self._fetchCommand('getPlayerStatus')
+				meta_info = await self._fetchCommand('getMetaInfo')
+				if isinstance(player_status, dict) :
+					self.last_vendor = player_status.get('vendor', '')
+					data = self._buildStatusData(player_status, meta_info)
+					app.nuvo_protocol.answerStatus(self.source, data)
+			except asyncio.CancelledError :
+				raise
+			except Exception as error :
+				elog("wiim source",self.source,"poll loop error, continuing:",error)
 			await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+	def _safeInt(self,value,default=0) :
+		try :
+			return int(value)
+		except (TypeError, ValueError) :
+			return default
 
 	def _buildStatusData(self,player_status,meta_info) :
 		data = {}
@@ -111,13 +122,13 @@ class WiiMProtocol :
 			# 'stop' and 'loading'
 			data['mode'] = 'stop'
 
-		total_length_ms = int(player_status.get('totlen', '0'))
-		current_position_ms = int(player_status.get('curpos', '0'))
+		total_length_ms = self._safeInt(player_status.get('totlen', '0'))
+		current_position_ms = self._safeInt(player_status.get('curpos', '0'))
 		data['duration'] = str(total_length_ms / 1000)
 		data['time'] = str(current_position_ms / 1000)
 		self.last_position_seconds = current_position_ms / 1000
 
-		loop_mode = int(player_status.get('loop', '4'))
+		loop_mode = self._safeInt(player_status.get('loop', '4'), default=4)
 		if loop_mode in (0, 1, 2) :
 			data['playlist repeat'] = '1'
 		else :
@@ -127,8 +138,8 @@ class WiiMProtocol :
 		else :
 			data['playlist shuffle'] = '0'
 
-		playlist_count = int(player_status.get('plicount', '0'))
-		playlist_current = int(player_status.get('plicurr', '0'))
+		playlist_count = self._safeInt(player_status.get('plicount', '0'))
+		playlist_current = self._safeInt(player_status.get('plicurr', '0'))
 		if playlist_count > 0 :
 			data['playlist_tracks'] = str(playlist_count)
 			data['playlist_cur_index'] = str(playlist_current - 1)
@@ -144,7 +155,7 @@ class WiiMProtocol :
 			album = meta_data.get('album', '')
 			artwork_url = meta_data.get('albumArtURI', '')
 		if not title :
-			mode_number = int(player_status.get('mode', '0'))
+			mode_number = self._safeInt(player_status.get('mode', '0'))
 			if mode_number in wiim_mode_names :
 				title = wiim_mode_names[mode_number]
 		data['title'] = title

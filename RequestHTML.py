@@ -142,7 +142,7 @@ async def zone_action(zone_id: int, action: str = "", favorite_id: str = "", sou
 	if action == "zone_on" :
 		squeeze_app.nuvo_protocol.sendZoneOn(zone_id)
 	elif action == "zone_off" :
-		squeeze_app.nuvo_protocol.sendZoneOff(zone_id)
+		squeeze_app.nuvo_protocol.sendZoneOff(zone_id, reason='manual_web')
 	elif action == "set_source" :
 		if source_id :
 			squeeze_app.nuvo_protocol.sendZoneSource(zone_id, source_id)
@@ -206,7 +206,7 @@ async def handle(request: Request, path: str) :
 		elif parameters["action"][0] == "zone_off" :
 			zone_num = int(parameters["zone"][0])
 			if squeeze_app.nuvo_protocol.isValidZone(zone_num) :
-				squeeze_app.nuvo_protocol.sendZoneOff(zone_num)
+				squeeze_app.nuvo_protocol.sendZoneOff(zone_num, reason='manual_web')
 		elif parameters["action"][0] == "all_off" :
 			squeeze_app.nuvo_protocol.sendAllOff()
 

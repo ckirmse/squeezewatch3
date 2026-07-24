@@ -442,7 +442,9 @@ class NuVoProtocol(asyncio.Protocol) :
 	def sendZoneOn(self,zone_num) :
 		self.send('*Z',zone_num,'ON')
 
-	def sendZoneOff(self,zone_num) :
+	def sendZoneOff(self,zone_num,reason=None) :
+		if reason is not None and self.isValidZone(zone_num) :
+			self.zones[zone_num].pending_off_reason = reason
 		self.send('*Z',zone_num,'OFF')
 
 	def sendZoneSource(self,zone_num,source) :
@@ -656,7 +658,6 @@ class NuVoProtocol(asyncio.Protocol) :
 	def receivedZoneOff(self,m) :
 		(zone_num,) = m.groups()
 		zone_num = int(zone_num)
-		#dlog("received zone",zone_num,"off")
 		if not self.isValidZone(zone_num) :
 			dlog("zone off for unknown zone",zone_num)
 			return
@@ -676,7 +677,6 @@ class NuVoProtocol(asyncio.Protocol) :
 		zone_num = int(zone_num)
 		source = int(source)
 		volume = int(volume)
-		#dlog("received zone",zone_num,"on source",source)
 		if not self.isValidZone(zone_num) :
 			dlog("zone on for unknown zone",zone_num)
 			return

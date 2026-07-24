@@ -39,6 +39,8 @@ class NuVoZone :
 		self.source = 0
 		self.volume = None
 		self.idle_timer = None
+		self.idle_timer_armed_at = None
+		self.pending_off_reason = None
 
 		self.menuid_artists = 27
 		self.menuid_artist_albums = 28
@@ -550,12 +552,19 @@ class NuVoZone :
 			self.setState(self.StateMain)
 
 	def receivedOff(self) :
+		reason = self.pending_off_reason
+		if reason is None :
+			reason = 'external'
+		log("zone",self.zone,"off, reason:",reason,"(was on source",self.source,")")
+		self.pending_off_reason = None
 		self.source = 0
 		if self.idle_timer != None :
 			self.idle_timer.cancel()
 			self.idle_timer = None
+			self.idle_timer_armed_at = None
 
 	def receivedOnSource(self, source, volume=None) :
+		log("zone",self.zone,"on, source",source)
 		self.source = source
 		if volume is not None :
 			self.volume = volume
@@ -565,6 +574,7 @@ class NuVoZone :
 		if self.idle_timer :
 			self.idle_timer.cancel()
 		self.idle_timer = asyncio.get_event_loop().call_later(delay, self.notifyIdleTimer)
+		self.idle_timer_armed_at = time.time()
 
 	def resetIdleTimer(self) :
 		if self.source in app.nuvo_protocol.getSources() :
@@ -577,8 +587,15 @@ class NuVoZone :
 			self._resetIdleTimer(self.idle_time)
 
 	def notifyIdleTimer(self) :
-		dlog("idle timeout for zone",self.zone)
+		idle_for = None
+		if self.idle_timer_armed_at is not None :
+			idle_for = time.time() - self.idle_timer_armed_at
+		source_data = app.nuvo_protocol.source_data.get(self.source, {})
+		log("zone",self.zone,"idle timeout on source",self.source,
+			"- idle for",idle_for,"s, last known playback: mode=",source_data.get('last_mode'),
+			"title=",source_data.get('title'),"artist=",source_data.get('artist'))
 		self.idle_timer = None
+		self.pending_off_reason = 'idle_timeout'
 		app.nuvo_protocol.sendZoneOff(self.zone)
 
 	def holdingPrev(self) :
