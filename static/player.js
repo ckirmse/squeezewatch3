@@ -34,6 +34,19 @@ let progressLastMode = null;
 const PROGRESS_SNAP_THRESHOLD_SECONDS = 2;
 const PROGRESS_SLEW_GAIN = 0.1;
 
+// Near an expected song end, poll the server quickly so the next track's info
+// shows immediately instead of waiting out the normal poll interval.
+const POLL_INTERVAL_MS = 1000;
+const FAST_POLL_INTERVAL_MS = 300;
+// Slightly outlasts the server's own 8s fast-poll cap toward the WiiM.
+const FAST_POLL_MAXIMUM_MS = 9000;
+const TRACK_END_ANTICIPATION_SECONDS = 0.3;
+
+let activeZonePollTimer = null;
+let fastPollDeadline = null;
+let lastTrackKey = null;
+let trackEndPollSent = false;
+
 bootstrapZones.forEach(function(zone) {
   zonesById[zone.id] = zone;
 });
@@ -171,6 +184,12 @@ function renderProgress() {
     displayedSecond = progressLastDisplayedSecond;
   }
   progressLastDisplayedSecond = displayedSecond;
+  if (progressPlaying && !trackEndPollSent && currentLocalPosition() >= progressDuration) {
+    // The song should have just ended; poll right away rather than waiting for
+    // the next scheduled poll to notice.
+    trackEndPollSent = true;
+    pollActiveZone();
+  }
   const percent = clampFraction(elapsed / progressDuration) * 100;
   seekBlock.classList.remove('hidden');
   document.getElementById('seek-fill').style.width = percent + '%';
@@ -300,8 +319,47 @@ artworkImageElement.onerror = function() {
   artworkImageElement.classList.remove('visible');
 };
 
+function scheduleNextActiveZonePoll(delayMilliseconds) {
+  if (activeZonePollTimer !== null) {
+    clearTimeout(activeZonePollTimer);
+  }
+  activeZonePollTimer = setTimeout(pollActiveZone, delayMilliseconds);
+}
+
+function computeNextPollDelay(data) {
+  const trackKey = data.title + ' ' + data.duration_sec;
+  const trackChanged = (lastTrackKey !== null && trackKey !== lastTrackKey);
+  lastTrackKey = trackKey;
+  if (trackChanged) {
+    trackEndPollSent = false;
+  }
+
+  const localPosition = currentLocalPosition();
+
+  if (fastPollDeadline !== null) {
+    let positionWrapped = false;
+    if (localPosition !== null && progressDuration !== null &&
+        localPosition < progressDuration - PROGRESS_SNAP_THRESHOLD_SECONDS) {
+      positionWrapped = true;
+    }
+    if (trackChanged || positionWrapped || progressDuration === null || Date.now() >= fastPollDeadline) {
+      fastPollDeadline = null;
+    } else {
+      return FAST_POLL_INTERVAL_MS;
+    }
+  }
+
+  if (progressPlaying && progressDuration !== null && localPosition !== null &&
+      localPosition >= progressDuration - TRACK_END_ANTICIPATION_SECONDS) {
+    fastPollDeadline = Date.now() + FAST_POLL_MAXIMUM_MS;
+    return FAST_POLL_INTERVAL_MS;
+  }
+  return POLL_INTERVAL_MS;
+}
+
 function pollActiveZone() {
   if (activeZoneId === null) {
+    scheduleNextActiveZonePoll(POLL_INTERVAL_MS);
     return;
   }
   fetch('/api/zone/' + activeZoneId + '/status')
@@ -313,9 +371,12 @@ function pollActiveZone() {
     })
     .then(function(data) {
       noteServerSuccess();
+      let delayMilliseconds = POLL_INTERVAL_MS;
       if (data.zone_id === activeZoneId) {
         renderStatus(data);
+        delayMilliseconds = computeNextPollDelay(data);
       }
+      scheduleNextActiveZonePoll(delayMilliseconds);
     })
     .catch(function(failure) {
       if (typeof failure === 'number') {
@@ -323,6 +384,7 @@ function pollActiveZone() {
       } else {
         noteServerFailure(null);
       }
+      scheduleNextActiveZonePoll(POLL_INTERVAL_MS);
     });
 }
 
@@ -459,6 +521,9 @@ document.addEventListener('click', function() {
 
 function selectZone(zoneId) {
   activeZoneId = zoneId;
+  fastPollDeadline = null;
+  lastTrackKey = null;
+  trackEndPollSent = false;
   roomDropdown.classList.remove('open');
   history.replaceState(null, '', '/?zone=' + zoneId);
   const zone = zonesById[zoneId];
@@ -690,5 +755,4 @@ if (activeZoneId !== null && zonesById[activeZoneId]) {
 }
 pollActiveZone();
 pollAllZones();
-setInterval(pollActiveZone, 1000);
 setInterval(pollAllZones, 2500);

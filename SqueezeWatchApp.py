@@ -406,6 +406,10 @@ class SqueezeWatchApp :
 				self.nuvo_protocol.updateSourceStreamUrl(source, data['url'])
 			if 'duration' in data :
 				self.nuvo_protocol.updateSourceIsStream(source, float(data['duration']) == 0.0)
+			# when the wiim is playing as an lms client, lms announces track
+			# changes seconds before the wiim's own api reflects them
+			if self.wiim_protocols[source].isSqueezeMode() :
+				self.wiim_protocols[source].noteLmsStatus(data)
 			return
 		self.nuvo_protocol.answerStatus(source,data)
 
