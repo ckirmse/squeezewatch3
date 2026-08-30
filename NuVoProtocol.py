@@ -516,8 +516,24 @@ class NuVoProtocol(asyncio.Protocol) :
 			app.getStatus(source)
 
 		# set zone names, if you want to rename something
+		#self.send('*ZCFG1NAME"Den"')
+		#self.send('*ZCFG2NAME"Office"')
+		#self.send('*ZCFG3NAME"Bedroom 2"')
+		#self.send('*ZCFG4NAME"Bedroom 3"')
+		#self.send('*ZCFG5NAME"Laundry Room"')
 		#self.send('*ZCFG6NAME"Main Bedroom"')
+		#self.send('*ZCFG7NAME"Basement"')
+		#self.send('*ZCFG8NAME"Living Room"')
+		#self.send('*ZCFG9NAME"Garage"')
+		#self.send('*ZCFG10NAME"Kitchen"')
 		#self.send('*ZCFG11NAME"Main Bathroom"')
+		#self.send('*ZCFG12NAME"Backyard Patio"')
+
+		# zones 13-16 have nothing connected, disable them so the nuvo stops reporting their status
+		#self.send('*ZCFG13ENABLE0')
+		#self.send('*ZCFG14ENABLE0')
+		#self.send('*ZCFG15ENABLE0')
+		#self.send('*ZCFG16ENABLE0')
 
 		# find out what zones are enabled
 		for i in range(1,17) :
