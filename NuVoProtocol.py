@@ -334,8 +334,6 @@ class NuVoProtocol(asyncio.Protocol) :
 		position = 0
 		if position_sec is not None :
 			position = int(10*position_sec)
-		if duration == 0 and duration > 0:
-			duration = 6000
 		mode = 0
 		if data['mode'] == 'play' :
 			mode = 2
@@ -388,8 +386,10 @@ class NuVoProtocol(asyncio.Protocol) :
 		if data['mode'] == 'stop' :
 			displines = makeString('*S',source,'DISPLINES2,2,1,"','','","','','","','','","','','"')
 			dispinfo = makeString('*S',source,'DISPINFO',0,',',0,',',mode)
+			self.source_data[source]['display_lines'] = {1: '', 2: '', 3: '', 4: ''}
 		else :
-			displines = makeString('*S',source,'DISPLINES2,2,1,"',progress,'","',album,'","',artist,'","',title,'"')
+			displines = makeString('*S',source,'DISPLINES2,2,1,"',nuvoEscape(progress),'","',nuvoEscape(album),'","',nuvoEscape(artist),'","',nuvoEscape(title),'"')
+			self.source_data[source]['display_lines'] = {1: progress, 2: album, 3: artist, 4: title}
 			if duration == 0 :
 				# streaming causes this
 				dispinfo = makeString('*S',source,'DISPINFO',0,',',0,',',mode)
@@ -487,8 +487,10 @@ class NuVoProtocol(asyncio.Protocol) :
 
 	def _receivedRestart(self) :
 		dlog("responding to restart")
-		self.dispinfo = None
-		self.displines = None
+		# the nuvo lost its display state, so forget what we last sent to force a resend
+		for i in self.source_data :
+			self.source_data[i]['dispinfo'] = None
+			self.source_data[i]['displines'] = None
 
 		# set the nuvo's time
 		now = datetime.now()

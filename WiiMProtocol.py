@@ -50,6 +50,7 @@ class WiiMProtocol :
 		self.lms_track_change_title = None
 		self.lms_track_change_duration = None
 		self.lms_track_change_monotonic = None
+		self.last_lms_title = None
 		# the wiim uses a self-signed certificate, so verification is disabled
 		self.session = aiohttp.ClientSession(
 			connector=aiohttp.TCPConnector(ssl=False),
@@ -132,8 +133,11 @@ class WiiMProtocol :
 		title = data.get('title', '')
 		if not title :
 			return
-		if title == app.nuvo_protocol.source_data[self.source]['title'] :
+		# compare against the last lms-announced title, not source_data['title'],
+		# which the wiim poll overwrites every second
+		if title == self.last_lms_title :
 			return
+		self.last_lms_title = title
 		log("wiim source",self.source,"lms announced track change to",title)
 		self.lms_track_change_title = title
 		self.lms_track_change_duration = None
