@@ -20,18 +20,31 @@ def parseNumber(num) :
 def makeString(*args) :
 	return ''.join([str(s) for s in args])
 
+# common typographic characters mapped to displayable ascii equivalents
+NUVO_CHAR_REPLACEMENTS = {
+	'‘': "'",
+	'’': "'",
+	'“': '"',
+	'”': '"',
+	'–': '-',
+	'—': '-',
+	'…': '...',
+}
+
 def nuvoEscape(s) :
 	retval = []
-	for ch in s.encode("ISO-8859-1") :
-		if ch >= 128 :
-			retval.append('_')
-		elif ch == ord('*') :
-		#if ch == '*' :
-			retval.append(r'\*')
-		elif ch == ord('"') :
-			retval.append(r'\"')
-		else :
-			retval.append(chr(ch))
+	for ch in s :
+		if ch in NUVO_CHAR_REPLACEMENTS :
+			ch = NUVO_CHAR_REPLACEMENTS[ch]
+		for replaced_ch in ch :
+			if ord(replaced_ch) >= 128 :
+				retval.append('_')
+			elif replaced_ch == '*' :
+				retval.append(r'\*')
+			elif replaced_ch == '"' :
+				retval.append(r'\"')
+			else :
+				retval.append(replaced_ch)
 	return ''.join(retval)
 
 def Func(base_level=0) :
